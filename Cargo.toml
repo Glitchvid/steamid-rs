@@ -1,0 +1,16 @@
+[package]
+name = "steamid-rs"
+version = "0.1.1"
+edition = "2021"
+
+[lib]
+name = "steamid"
+path = "src/lib/mod.rs"
+
+
+[[bin]]
+name = "converter"
+
+
+[dependencies]
+thiserror = "1.0"
