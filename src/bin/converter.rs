@@ -1,4 +1,4 @@
-//! Sample application that parses an input into a SteamId and manuipulates it.
+//! Sample application that parses an input into a SteamId and manipulates it.
 
 extern crate steamid;
 
