@@ -393,10 +393,10 @@ impl SteamId {
     /// Returns the [Universe] for this SteamId
     /// # Example
     /// ```
-    /// use steamid::{SteamId};
+    /// use steamid::{SteamId, Universe};
     ///
-    /// let id: SteamId = "[g:1:34967627]".parse().unwrap();
-    /// assert_eq!(id.url(), "http://steamcommunity.com/gid/[g:1:34967627]")
+    /// let id: SteamId = "[U:1:30688105]".parse().unwrap();
+    /// assert_eq!(id.universe(), Universe::Public)
     /// ```
     pub fn universe(&self) -> Universe {
         Universe::from(self)
@@ -412,10 +412,10 @@ impl SteamId {
     ///
     /// # Example
     /// ```
-    /// use steamid::{SteamId, Universe};
+    /// use steamid::{SteamId};
     ///
-    /// let id: SteamId = "[U:1:30688105]".parse().unwrap();
-    /// assert_eq!(id.universe(), Universe::Public)
+    /// let id: SteamId = "[g:1:34967627]".parse().unwrap();
+    /// assert_eq!(id.url(), "http://steamcommunity.com/gid/[g:1:34967627]")
     /// ```
     pub fn url(&self) -> String {
         let url_prefix = match self.account_type() {
