@@ -1,5 +1,5 @@
-//! Todo: 
-//! 
+//! Todo:
+//!
 //! TOP LEVEL DOCUMENTATION
 
 mod account_type;

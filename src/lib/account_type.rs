@@ -3,7 +3,7 @@ use std::fmt::Display;
 use crate::{mask, shift};
 use crate::{ChatType, SteamId};
 
-/// Defines the utility of a SteamId.
+/// Defines the role for this SteamId
 #[derive(Debug, PartialEq, Clone, Copy, Eq, PartialOrd, Ord, Hash)]
 pub enum AccountType {
     Invalid,
