@@ -213,57 +213,23 @@ impl FromStr for SteamIdBuilder {
     type Err = SteamIdParseError;
 
     // Ugly parsing code since we're not using Regex.
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.trim();
-        // Quickly evaluate SteamId64s
-        let c = s.chars().count();
-        if (c <= 20) && (c > 0) {
-            let parse = s.parse::<u64>();
-            if let Ok(parse) = parse {
-                return Ok(SteamIdBuilder { id: parse });
-            }
-        }
-        // Evaluate if SteamId3
-        {
-            let mut chars = s.chars();
-            let first = chars.next().ok_or(SteamIdParseError::Empty)?;
-            let last = chars.last().ok_or(SteamIdParseError::TooShort)?;
-            // If we're within SteamId3 bracket.
-            if first == '[' && last == ']' {
-                let mut steam3 = s.chars();
-                let _first = steam3.next().ok_or(SteamIdParseError::Empty)?;
-                let atype: AccountType = steam3.next().ok_or(SteamIdParseError::TooShort)?.into();
-                let _ = steam3.next().ok_or(SteamIdParseError::TooShort)?;
-                let mut values = steam3.collect::<String>();
-                // Remove the last bracket.
-                values.pop();
-                let fields: Vec<&str> = values.split(':').collect();
-                if fields.len() < 2 {
-                    return Err(SteamIdParseError::TooShort);
-                }
-                return Ok(SteamIdBuilder::new()
-                    .account_type(atype)
-                    .universe(u8::from_str(fields[0]).map_err(|_| SteamIdParseError::Invalid)?)
-                    .authentication_server(
-                        fields[1].parse().map_err(|_| SteamIdParseError::Invalid)?,
-                    )
-                    .account_number(
-                        fields[1]
-                            .parse::<u64>()
-                            .map_err(|_| SteamIdParseError::Invalid)?
-                            >> shift::ACCOUNT_NUMBER,
-                    ));
-            }
-        }
-        // Evaluate if SteamId2
-        {
-            if s.starts_with("STEAM_") {
-                let steam2 = s.chars().skip(6).collect::<String>();
+        let mut chars = s.chars();
+        match chars.next().ok_or(SteamIdParseError::Empty)? {
+            // Evaluate SteamId64
+            '0'..='9' => Ok(SteamIdBuilder {
+                id: s.parse::<u64>().map_err(|_| SteamIdParseError::Invalid)?,
+            }),
+            // Evaluate SteamId2 / SteamId2Legacy
+            'S' => {
+                let steam2 = chars.skip(5).collect::<String>();
                 let fields = steam2.split(':').collect::<Vec<&str>>();
                 if fields.len() < 3 {
                     return Err(SteamIdParseError::TooShort);
                 }
-                return Ok(SteamIdBuilder::new()
+                let steamid = SteamIdBuilder::new()
                     .universe(
                         u8::from_str(fields[0])
                             .map_err(|_| SteamIdParseError::Invalid)?
@@ -277,11 +243,38 @@ impl FromStr for SteamIdBuilder {
                     )
                     .account_number(fields[2].parse().map_err(|_| SteamIdParseError::Invalid)?)
                     // SteamId2 is only ever used for individual 'U'sers.
-                    .account_type('U'));
+                    .account_type('U');
+                Ok(steamid)
             }
+            // Evaluate SteamId3
+            '[' => {
+                // SteamId3 must be terminated with a bracket.
+                if s.chars().last().ok_or(SteamIdParseError::TooShort)? != ']' {
+                    return Err(SteamIdParseError::UknownFormat);
+                }
+                let steam3 = chars.filter(|c| *c != ']').collect::<String>();
+                let fields = steam3.split(':').collect::<Vec<&str>>();
+                if fields.len() < 3 {
+                    return Err(SteamIdParseError::TooShort);
+                }
+                let steamid = SteamIdBuilder::new()
+                    .universe(u8::from_str(fields[1]).map_err(|_| SteamIdParseError::Invalid)?)
+                    .authentication_server(
+                        fields[2].parse().map_err(|_| SteamIdParseError::Invalid)?,
+                    )
+                    .account_number(
+                        fields[2]
+                            .parse::<u64>()
+                            .map_err(|_| SteamIdParseError::Invalid)?
+                            >> shift::ACCOUNT_NUMBER,
+                    )
+                    .account_type(
+                        char::from_str(fields[0]).map_err(|_| SteamIdParseError::Invalid)?,
+                    );
+                Ok(steamid)
+            }
+            _ => Err(SteamIdParseError::UknownFormat),
         }
-        // Unable to find any matching type.
-        Err(SteamIdParseError::UknownFormat)
     }
 }
 
