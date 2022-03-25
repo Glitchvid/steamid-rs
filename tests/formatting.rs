@@ -1,6 +1,5 @@
-use steamid::SteamId;
 use steamid::IdFormat::*;
-
+use steamid::SteamId;
 
 #[test]
 fn id_to_string() {
