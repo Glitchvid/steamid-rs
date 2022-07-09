@@ -40,21 +40,21 @@ fn replace_bits(val: u64, mask: u64, new: u64) -> u64 {
 ///
 /// - Initiating a simple user and getting their profile URL
 /// ```
-/// use steamid::SteamIdBuilder;
+/// use steamid::{SteamIdBuilder, IdFormat};
 ///
 /// let user = SteamIdBuilder::new().account_number(1).finish();
 ///
-/// let url = user.url();
-/// assert_eq!(url, "http://steamcommunity.com/profiles/[U:1:2]" )
+/// let url = IdFormat::Url(&user).to_string();
+/// assert_eq!(url, "http://steamcommunity.com/profiles/76561197960265730" )
 /// ```
 ///
 /// - Taking an existing SteamId and getting a builder back to modify.
 /// ```
-/// use steamid::{SteamId, SteamIdBuilder};
+/// use steamid::{SteamId, SteamIdBuilder, IdFormat};
 ///
 /// let base = SteamId::from(76561197990953833);
 /// let multiverse = SteamIdBuilder::from(&base).universe(2).finish();
-/// assert_eq!(multiverse.url(), "http://steamcommunity.com/profiles/[U:2:30688105]")
+/// assert_eq!(IdFormat::Url(&multiverse).to_string(), "http://steamcommunity.com/profiles/148618792028881769")
 /// ```
 ///
 /// - Completely specify a SteamId.
@@ -390,33 +390,6 @@ impl SteamId {
     pub fn universe(&self) -> Universe {
         Universe::from(self)
     }
-
-    /// Returns a url for this SteamId
-    ///
-    /// This is a best-effort function, no guarantee that the URL resolves to
-    /// a valid user.
-    ///
-    /// URL formats are only specified for [AccountType::Individual] and
-    /// [AccountType::Clan].
-    ///
-    /// # Example
-    /// ```
-    /// use steamid::{SteamId};
-    ///
-    /// let id: SteamId = "[g:1:34967627]".parse().unwrap();
-    /// assert_eq!(id.url(), "http://steamcommunity.com/gid/[g:1:34967627]")
-    /// ```
-    pub fn url(&self) -> String {
-        let url_prefix = match self.account_type() {
-            AccountType::Clan => GROUP_URL,
-            _ => PROFILE_URL,
-        };
-        let url_postfix = IdFormat::SteamId3(self).to_string();
-        let mut url = String::with_capacity(url_prefix.len() + url_postfix.len());
-        url.push_str(url_prefix);
-        url.push_str(&url_postfix);
-        url
-    }
 }
 
 // Let users cast directly from a u64 to a SteamId if they want.
@@ -445,7 +418,7 @@ impl FromStr for SteamId {
 /// # Examples #
 ///
 /// ```
-/// use steamid::{IdFormat, SteamIdBuilder};
+/// use steamid::{IdFormat, SteamIdBuilder, SteamId};
 ///
 /// let user = SteamIdBuilder::new()
 ///     .account_number(15344052)
@@ -456,6 +429,7 @@ impl FromStr for SteamId {
 /// assert_eq!(format!("{}",  IdFormat::SteamId64(&user)), "76561197990953833");
 /// assert_eq!(format!("{}",  IdFormat::SteamId2(&user)), "STEAM_1:1:15344052");
 /// assert_eq!(format!("{}",  IdFormat::SteamId3(&user)), "[U:1:30688105]");
+/// assert_eq!(format!("{}",  IdFormat::Url(&SteamId::from(103582791464489035))), "http://steamcommunity.com/gid/[g:1:34967627]");
 ///```
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum IdFormat<'a> {
@@ -479,6 +453,13 @@ pub enum IdFormat<'a> {
     ///
     /// Example: `[U:1:30688105]`
     SteamId3(&'a SteamId),
+    /// Web address for the SteamId.
+    /// 
+    /// ## Example ##
+    /// `http://steamcommunity.com/profiles/76561197990953833`
+    /// 
+    /// `http://steamcommunity.com/gid/[g:1:34967627]`
+    Url(&'a SteamId),
 }
 
 impl Display for IdFormat<'_> {
@@ -506,6 +487,13 @@ impl Display for IdFormat<'_> {
                 u8::from(v.universe()),
                 v.id & (mask::AUTH_SERVER | mask::ACCOUNT_NUMBER)
             ),
+            IdFormat::Url(v) => {
+                let (prefix, postfix) = match v.account_type() {
+                    AccountType::Clan => (GROUP_URL, IdFormat::SteamId3(v).to_string()),
+                    _ => (PROFILE_URL, v.id.to_string()),
+                };
+                write!(f, "{prefix}{postfix}")
+            }
         }
     }
 }
