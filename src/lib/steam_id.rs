@@ -111,11 +111,10 @@ impl SteamIdBuilder {
     /// Sets the Authentication server bit
     ///
     /// Only meaningful values are `0` or `1`, anything `> 1` is capped to `1`.
-    pub fn authentication_server(self, val: u64) -> Self {
+    pub fn authentication_server(mut self, val: u64) -> Self {
         let new_val = if val >= 1 { 1 } else { 0 };
-        Self {
-            id: replace_bits(self.id, mask::AUTH_SERVER, new_val << shift::AUTH_SERVER),
-        }
+        self.id = replace_bits(self.id, mask::AUTH_SERVER, new_val << shift::AUTH_SERVER);
+        self
     }
 
     /// Sets the 31-bit Steam account number.
@@ -124,10 +123,9 @@ impl SteamIdBuilder {
     /// `[U:1:3]` is account number `1` (`STEAM_1:1:1`)
     ///
     /// **Notice**: Values exceeding `2^31` are truncated at the highest bit.
-    pub fn account_number(self, val: u64) -> Self {
-        Self {
-            id: replace_bits(self.id, mask::ACCOUNT_NUMBER, val << shift::ACCOUNT_NUMBER),
-        }
+    pub fn account_number(mut self, val: u64) -> Self {
+        self.id = replace_bits(self.id, mask::ACCOUNT_NUMBER, val << shift::ACCOUNT_NUMBER);
+        self
     }
 
     /// Sets the account type, this can either by an [AccountType] itself, or
@@ -169,37 +167,34 @@ impl SteamIdBuilder {
     ///
     /// This is different to `account_type` in that it does not have any
     /// side-effects of changing the `Instance` value.
-    pub fn account_type_preserve_bits<T: Into<AccountType>>(self, val: T) -> Self {
+    pub fn account_type_preserve_bits<T: Into<AccountType>>(mut self, val: T) -> Self {
         let atype: AccountType = val.into();
-        Self {
-            id: replace_bits(
-                self.id,
-                mask::ACCOUNT_TYPE,
-                (u8::from(atype) as u64) << shift::ACCOUNT_TYPE,
-            ),
-        }
+        self.id = replace_bits(
+            self.id,
+            mask::ACCOUNT_TYPE,
+            (u8::from(atype) as u64) << shift::ACCOUNT_TYPE,
+        );
+        self
     }
 
     /// Sets the account [Instance], this can either by an Instance itself,
     /// or any value which can be converted.
     ///
     /// This is usually best left to whatever default value is set.
-    pub fn instance<T: Into<Instance>>(self, val: T) -> Self {
+    pub fn instance<T: Into<Instance>>(mut self, val: T) -> Self {
         let val: Instance = val.into();
         let val = u32::from(val) as u64;
-        Self {
-            id: replace_bits(self.id, mask::INSTANCE, val << shift::INSTANCE),
-        }
+        self.id = replace_bits(self.id, mask::INSTANCE, val << shift::INSTANCE);
+        self
     }
 
     /// Sets the [Universe] this account exists within.
     /// or any value which can be converted.
-    pub fn universe<T: Into<Universe>>(self, val: T) -> Self {
+    pub fn universe<T: Into<Universe>>(mut self, val: T) -> Self {
         let val: Universe = val.into();
         let val = u8::from(val) as u64;
-        Self {
-            id: replace_bits(self.id, mask::UNIVERSE, val << shift::UNIVERSE),
-        }
+        self.id = replace_bits(self.id, mask::UNIVERSE, val << shift::UNIVERSE);
+        self
     }
 }
 
