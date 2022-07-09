@@ -29,6 +29,7 @@ pub enum SteamIdParseError {
     Other(&'static str),
 }
 
+/// Replaces the bits in `val` with those from `new`, leaving masked bits alone.
 fn replace_bits(val: u64, mask: u64, new: u64) -> u64 {
     (val & (!mask)) | (new & mask)
 }
