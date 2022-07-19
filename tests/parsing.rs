@@ -54,12 +54,12 @@ fn from_steamid64_str() {
 #[test]
 fn from_steamid2_str() {
     assert!(
-        SteamId::from_str("STEAM_0:0:0").is_ok(),
-        "Unable to parse weird, but valid SteamId2"
-    );
-    assert!(
         SteamId::from_str("STEAM_1:1:1").is_ok(),
         "Unable to parse valid SteamId2"
+    );
+    assert!(
+        SteamId::from_str("STEAM_0:0:0").is_ok(),
+        "Unable to parse weird, but valid SteamId2"
     );
     assert!(
         SteamId::from_str("STEAM_0:1:2147483647").is_ok(),
