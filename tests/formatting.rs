@@ -24,6 +24,12 @@ fn id_to_string() {
     let ref4 = SteamId::from(85568392923371047);
     assert_eq!(SteamId3(&ref4).to_string(), "[G:1:3331623]");
 
-    assert_eq!(Url(&ref3).to_string(), "http://steamcommunity.com/gid/[g:1:34967627]");
-    assert_eq!(Url(&ref1).to_string(), "http://steamcommunity.com/profiles/76561197990953833");
+    assert_eq!(
+        Url(&ref3).to_string(),
+        "http://steamcommunity.com/gid/[g:1:34967627]"
+    );
+    assert_eq!(
+        Url(&ref1).to_string(),
+        "http://steamcommunity.com/profiles/76561197990953833"
+    );
 }
