@@ -205,70 +205,83 @@ impl From<&SteamId> for SteamIdBuilder {
     }
 }
 
+fn parse_from_steamid64(s: &str) -> Result<SteamIdBuilder, SteamIdParseError> {
+    Ok(SteamIdBuilder {
+        id: s.parse::<u64>().map_err(|_| SteamIdParseError::Invalid)?,
+    })
+}
+
+fn parse_from_steamid2(s: &str) -> Result<SteamIdBuilder, SteamIdParseError> {
+    let steam2 = s.get(6..).ok_or(SteamIdParseError::TooShort)?;
+    let mut fields = steam2.split(':');
+    let steamid = SteamIdBuilder::new()
+        .universe(
+            u8::from_str(fields.next().ok_or(SteamIdParseError::TooShort)?)
+                .map_err(|_| SteamIdParseError::Invalid)?
+                // Interpret 'Unspecified' universe as 'Public' to
+                // comply with Valve's implementation of steamID in
+                // legacy Source/GoldSrc engine games.
+                .max(1),
+        )
+        .authentication_server(
+            fields
+                .next()
+                .ok_or(SteamIdParseError::TooShort)?
+                .parse()
+                .map_err(|_| SteamIdParseError::Invalid)?,
+        )
+        .account_number(
+            fields
+                .next()
+                .ok_or(SteamIdParseError::TooShort)?
+                .parse()
+                .map_err(|_| SteamIdParseError::Invalid)?,
+        )
+        // SteamId2 is only ever used for individual 'U'sers.
+        .account_type('U');
+    Ok(steamid)
+}
+
+fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, SteamIdParseError> {
+    // SteamId3 must be terminated with a bracket.
+    if s.chars().last().ok_or(SteamIdParseError::TooShort)? != ']' {
+        return Err(SteamIdParseError::UknownFormat);
+    }
+    let steam3 = s
+        .get(1..s.len() - 1)
+        .ok_or(SteamIdParseError::UknownFormat)?;
+    let mut fields = steam3.split(':');
+    let acc_type = fields.next().ok_or(SteamIdParseError::TooShort)?;
+    let universe = fields.next().ok_or(SteamIdParseError::TooShort)?;
+    let auth_server = fields.next().ok_or(SteamIdParseError::TooShort)?;
+    let steamid = SteamIdBuilder::new()
+        .universe(u8::from_str(universe).map_err(|_| SteamIdParseError::Invalid)?)
+        .authentication_server(
+            auth_server
+                .parse()
+                .map_err(|_| SteamIdParseError::Invalid)?,
+        )
+        .account_number(
+            auth_server
+                .parse::<u64>()
+                .map_err(|_| SteamIdParseError::Invalid)?
+                >> shift::ACCOUNT_NUMBER,
+        )
+        .account_type(char::from_str(acc_type).map_err(|_| SteamIdParseError::Invalid)?);
+    Ok(steamid)
+}
+
 impl FromStr for SteamIdBuilder {
     type Err = SteamIdParseError;
 
     // Ugly parsing code since we're not using Regex.
-
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.trim();
         let mut chars = s.chars();
         match chars.next().ok_or(SteamIdParseError::Empty)? {
-            // Evaluate SteamId64
-            '0'..='9' => Ok(SteamIdBuilder {
-                id: s.parse::<u64>().map_err(|_| SteamIdParseError::Invalid)?,
-            }),
-            // Evaluate SteamId2 / SteamId2Legacy
-            'S' => {
-                let steam2 = chars.skip(5).collect::<String>();
-                let fields = steam2.split(':').collect::<Vec<&str>>();
-                if fields.len() < 3 {
-                    return Err(SteamIdParseError::TooShort);
-                }
-                let steamid = SteamIdBuilder::new()
-                    .universe(
-                        u8::from_str(fields[0])
-                            .map_err(|_| SteamIdParseError::Invalid)?
-                            // Interpret 'Unspecified' universe as 'Public' to
-                            // comply with Valve's implementation of steamID in
-                            // legacy Source/GoldSrc engine games.
-                            .max(1),
-                    )
-                    .authentication_server(
-                        fields[1].parse().map_err(|_| SteamIdParseError::Invalid)?,
-                    )
-                    .account_number(fields[2].parse().map_err(|_| SteamIdParseError::Invalid)?)
-                    // SteamId2 is only ever used for individual 'U'sers.
-                    .account_type('U');
-                Ok(steamid)
-            }
-            // Evaluate SteamId3
-            '[' => {
-                // SteamId3 must be terminated with a bracket.
-                if s.chars().last().ok_or(SteamIdParseError::TooShort)? != ']' {
-                    return Err(SteamIdParseError::UknownFormat);
-                }
-                let steam3 = chars.filter(|c| *c != ']').collect::<String>();
-                let fields = steam3.split(':').collect::<Vec<&str>>();
-                if fields.len() < 3 {
-                    return Err(SteamIdParseError::TooShort);
-                }
-                let steamid = SteamIdBuilder::new()
-                    .universe(u8::from_str(fields[1]).map_err(|_| SteamIdParseError::Invalid)?)
-                    .authentication_server(
-                        fields[2].parse().map_err(|_| SteamIdParseError::Invalid)?,
-                    )
-                    .account_number(
-                        fields[2]
-                            .parse::<u64>()
-                            .map_err(|_| SteamIdParseError::Invalid)?
-                            >> shift::ACCOUNT_NUMBER,
-                    )
-                    .account_type(
-                        char::from_str(fields[0]).map_err(|_| SteamIdParseError::Invalid)?,
-                    );
-                Ok(steamid)
-            }
+            '0'..='9' => parse_from_steamid64(s),
+            'S' => parse_from_steamid2(s),
+            '[' => parse_from_steamid3(s),
             _ => Err(SteamIdParseError::UknownFormat),
         }
     }
@@ -454,10 +467,10 @@ pub enum IdFormat<'a> {
     /// Example: `[U:1:30688105]`
     SteamId3(&'a SteamId),
     /// Web address for the SteamId.
-    /// 
+    ///
     /// ## Example ##
     /// `http://steamcommunity.com/profiles/76561197990953833`
-    /// 
+    ///
     /// `http://steamcommunity.com/gid/[g:1:34967627]`
     Url(&'a SteamId),
 }
