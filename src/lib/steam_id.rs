@@ -11,17 +11,24 @@ use crate::{mask, shift};
 use crate::{ChatType, Instance};
 
 /// Reasons why parsing a SteamId might fail.
-#[derive(Debug, Error, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, Error, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub enum SteamIdParseError {
+    /// Failed to deduce any SteamId format during parsing.
     #[error("Unable to identify SteamId format")]
     UknownFormat,
 
+    /// Failed to interpret a value during SteamId parsing.
+    ///
+    /// This is caused by SteamId being formatted incorrectly, such as having
+    /// letters where numbers should be.
     #[error("Invalid value")]
     Invalid,
 
+    /// Input did not contain all the fields required to parse.
     #[error("Too short")]
     TooShort,
 
+    /// Failed by having no data at all to parse.
     #[error("Empty value")]
     Empty,
 
@@ -212,7 +219,7 @@ fn parse_from_steamid64(s: &str) -> Result<SteamIdBuilder, SteamIdParseError> {
 }
 
 fn parse_from_steamid2(s: &str) -> Result<SteamIdBuilder, SteamIdParseError> {
-    let steam2 = s.get(6..).ok_or(SteamIdParseError::TooShort)?;
+    let steam2 = s.get(6..).ok_or(SteamIdParseError::UknownFormat)?;
     let mut fields = steam2.split(':');
     let steamid = SteamIdBuilder::new()
         .universe(
@@ -333,7 +340,7 @@ impl FromStr for SteamIdBuilder {
 ///     .finish();
 /// assert_eq!(player.id, 76561210875855721)
 /// ```
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct SteamId {
     pub id: u64,
 }
