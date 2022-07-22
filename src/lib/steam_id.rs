@@ -1,9 +1,8 @@
 const PROFILE_URL: &str = "http://steamcommunity.com/profiles/";
 const GROUP_URL: &str = "http://steamcommunity.com/gid/";
 
-use std::fmt::{Debug, Display};
+use std::fmt::{self, Debug, Display};
 use std::str::FromStr;
-use thiserror::Error;
 
 use crate::account_type::AccountType;
 use crate::universe::Universe;
@@ -11,30 +10,39 @@ use crate::{mask, shift};
 use crate::{ChatType, Instance};
 
 /// Reasons why parsing a SteamId might fail.
-#[derive(Debug, Error, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub enum SteamIdParseError {
     /// Failed to deduce any SteamId format during parsing.
-    #[error("Unable to identify SteamId format")]
     UknownFormat,
 
     /// Failed to interpret a value during SteamId parsing.
     ///
     /// This is caused by SteamId being formatted incorrectly, such as having
     /// letters where numbers should be.
-    #[error("Invalid value")]
     Invalid,
 
     /// Input did not contain all the fields required to parse.
-    #[error("Too short")]
     TooShort,
 
     /// Failed by having no data at all to parse.
-    #[error("Empty value")]
     Empty,
 
-    #[error("{0}")]
     Other(&'static str),
 }
+
+impl Display for SteamIdParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SteamIdParseError::UknownFormat => write!(f, "unable to identify SteamId format"),
+            SteamIdParseError::Invalid => write!(f, "invalid value"),
+            SteamIdParseError::TooShort => write!(f, "unexpected end of string"),
+            SteamIdParseError::Empty => write!(f, "input empty"),
+            SteamIdParseError::Other(v) => write!(f, "{v}"),
+        }
+    }
+}
+
+impl std::error::Error for SteamIdParseError {}
 
 /// Replaces the bits in `val` with those from `new`, leaving masked bits alone.
 fn replace_bits(val: u64, mask: u64, new: u64) -> u64 {
@@ -212,6 +220,23 @@ impl From<&SteamId> for SteamIdBuilder {
     }
 }
 
+impl FromStr for SteamIdBuilder {
+    type Err = SteamIdParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.trim();
+        let mut chars = s.chars();
+        match chars.next().ok_or(SteamIdParseError::Empty)? {
+            '0'..='9' => parse_from_steamid64(s),
+            'S' => parse_from_steamid2(s),
+            '[' => parse_from_steamid3(s),
+            _ => Err(SteamIdParseError::UknownFormat),
+        }
+    }
+}
+
+// Ugly parsing code since we're not using Regex.
+
 fn parse_from_steamid64(s: &str) -> Result<SteamIdBuilder, SteamIdParseError> {
     Ok(SteamIdBuilder {
         id: s.parse::<u64>().map_err(|_| SteamIdParseError::Invalid)?,
@@ -276,22 +301,6 @@ fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, SteamIdParseError> {
         )
         .account_type(char::from_str(acc_type).map_err(|_| SteamIdParseError::Invalid)?);
     Ok(steamid)
-}
-
-impl FromStr for SteamIdBuilder {
-    type Err = SteamIdParseError;
-
-    // Ugly parsing code since we're not using Regex.
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let s = s.trim();
-        let mut chars = s.chars();
-        match chars.next().ok_or(SteamIdParseError::Empty)? {
-            '0'..='9' => parse_from_steamid64(s),
-            'S' => parse_from_steamid2(s),
-            '[' => parse_from_steamid3(s),
-            _ => Err(SteamIdParseError::UknownFormat),
-        }
-    }
 }
 
 /// Represents a complete SteamId for querying values.
