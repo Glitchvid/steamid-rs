@@ -1,7 +1,7 @@
 const PROFILE_URL: &str = "http://steamcommunity.com/profiles/";
 const GROUP_URL: &str = "http://steamcommunity.com/gid/";
 
-use std::fmt::{self, Debug, Display};
+use std::fmt::{Debug, Display};
 use std::str::FromStr;
 
 use crate::account_type::AccountType;
@@ -9,40 +9,83 @@ use crate::universe::Universe;
 use crate::{mask, shift};
 use crate::{ChatType, Instance};
 
-/// Reasons why parsing a SteamId might fail.
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
-pub enum SteamIdParseError {
-    /// Failed to deduce any SteamId format during parsing.
-    UknownFormat,
+use self::errors::{ParseError, Field};
 
-    /// Failed to interpret a value during SteamId parsing.
-    ///
-    /// This is caused by SteamId being formatted incorrectly, such as having
-    /// letters where numbers should be.
-    Invalid,
+pub mod errors {
+    //! Module to disambiguate our error-related types.
+    use std::fmt::{self, Debug, Display};
 
-    /// Input did not contain all the fields required to parse.
-    TooShort,
+    /// Parsing components of a SteamId
+    #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
+    pub enum Field {
+        ///Authentication Server bit, only ever parsed directly from SteamId2.
+        ///
+        /// Values exceeding 1 fail during parsing.
+        /// * STEAM_X:**Y**:Z
+        AuthServer,
+        /// 31-bit number, so values exceeding `2147483647` fail.
+        ///
+        /// Value is parsed directly from the Z value in a SteamId2,
+        /// for SteamId3 the value is packed with the `AuthServer` bit
+        /// * STEAM_X:Y:**Z**
+        /// * \[X:Y:**Z**]
+        AccountNumber,
+        Instance,
+        /// Only directly parsed in SteamId3 formats.
+        /// * \[**X**:Y:Z]
+        AccountType,
+        Universe,
+        SteamId64,
+    }
 
-    /// Failed by having no data at all to parse.
-    Empty,
-
-    Other(&'static str),
-}
-
-impl Display for SteamIdParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            SteamIdParseError::UknownFormat => write!(f, "unable to identify SteamId format"),
-            SteamIdParseError::Invalid => write!(f, "invalid value"),
-            SteamIdParseError::TooShort => write!(f, "unexpected end of string"),
-            SteamIdParseError::Empty => write!(f, "input empty"),
-            SteamIdParseError::Other(v) => write!(f, "{v}"),
+    impl Display for Field {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            match self {
+                Field::AuthServer => write!(f, "Authentication Server"),
+                Field::AccountNumber => write!(f, "Account Number"),
+                Field::Instance => write!(f, "Instance"),
+                Field::AccountType => write!(f, "Account Type"),
+                Field::Universe => write!(f, "Universe"),
+                Field::SteamId64 => write!(f, "SteamId64"),
+            }
         }
     }
-}
 
-impl std::error::Error for SteamIdParseError {}
+    /// Reasons why parsing a SteamId might fail.
+    #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
+    pub enum ParseError {
+        /// Failed to deduce any SteamId format during parsing.
+        UknownFormat,
+
+        /// Failed to interpret a value during SteamId parsing.
+        ///
+        /// This is caused by SteamId being formatted incorrectly, such as having
+        /// letters where numbers should be.
+        Invalid(Field),
+
+        /// Input did not contain all the fields required to parse.
+        TooShort,
+
+        /// Failed by having no data at all to parse.
+        Empty,
+
+        Other(&'static str),
+    }
+
+    impl Display for ParseError {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            match self {
+                ParseError::UknownFormat => write!(f, "unable to identify SteamId format"),
+                ParseError::Invalid(v) => write!(f, "invalid value {v}"),
+                ParseError::TooShort => write!(f, "unexpected end of string"),
+                ParseError::Empty => write!(f, "input empty"),
+                ParseError::Other(v) => write!(f, "{v}"),
+            }
+        }
+    }
+
+    impl std::error::Error for ParseError {}
+}
 
 /// Replaces the bits in `val` with those from `new`, leaving masked bits alone.
 fn replace_bits(val: u64, mask: u64, new: u64) -> u64 {
@@ -91,6 +134,7 @@ pub struct SteamIdBuilder {
 }
 
 impl SteamIdBuilder {
+    #[allow(clippy::new_without_default)]
     /// Begets a new SteamIdBuilder with some resonable defaults.
     ///
     /// Defaults:
@@ -221,20 +265,20 @@ impl From<&SteamId> for SteamIdBuilder {
 }
 
 impl FromStr for SteamIdBuilder {
-    type Err = SteamIdParseError;
+    type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.trim();
         // No valid SteamId string can be longer than 32 bytes.
         if s.len() > 32 {
-            Err(SteamIdParseError::UknownFormat)
+            Err(ParseError::UknownFormat)
         } else {
             // Only ever ASCII values in a SteamId so treat as bytes for speed.
-            match s.as_bytes().get(0).ok_or(SteamIdParseError::Empty)? {
+            match s.as_bytes().get(0).ok_or(ParseError::Empty)? {
                 b'0'..=b'9' => parse_from_steamid64(s),
                 b'S' => parse_from_steamid2(s),
                 b'[' => parse_from_steamid3(s),
-                _ => Err(SteamIdParseError::UknownFormat),
+                _ => Err(ParseError::UknownFormat),
             }
         }
     }
@@ -242,19 +286,19 @@ impl FromStr for SteamIdBuilder {
 
 // Ugly parsing code since we're not using Regex.
 
-fn parse_from_steamid64(s: &str) -> Result<SteamIdBuilder, SteamIdParseError> {
+fn parse_from_steamid64(s: &str) -> Result<SteamIdBuilder, ParseError> {
     Ok(SteamIdBuilder {
-        id: s.parse::<u64>().map_err(|_| SteamIdParseError::Invalid)?,
+        id: s.parse::<u64>().map_err(|_| ParseError::Invalid(Field::SteamId64))?,
     })
 }
 
-fn parse_from_steamid2(s: &str) -> Result<SteamIdBuilder, SteamIdParseError> {
-    let steam2 = s.get(6..).ok_or(SteamIdParseError::UknownFormat)?;
+fn parse_from_steamid2(s: &str) -> Result<SteamIdBuilder, ParseError> {
+    let steam2 = s.get(6..).ok_or(ParseError::UknownFormat)?;
     let mut fields = steam2.split(':');
     let steamid = SteamIdBuilder::new()
         .universe(
-            u8::from_str(fields.next().ok_or(SteamIdParseError::TooShort)?)
-                .map_err(|_| SteamIdParseError::Invalid)?
+            u8::from_str(fields.next().ok_or(ParseError::TooShort)?)
+                .map_err(|_| ParseError::Invalid(Field::Universe))?
                 // Interpret 'Unspecified' universe as 'Public' to
                 // comply with Valve's implementation of steamID in
                 // legacy Source/GoldSrc engine games.
@@ -263,25 +307,25 @@ fn parse_from_steamid2(s: &str) -> Result<SteamIdBuilder, SteamIdParseError> {
         .authentication_server(
             fields
                 .next()
-                .ok_or(SteamIdParseError::TooShort)?
+                .ok_or(ParseError::TooShort)?
                 .parse()
-                .map_err(|_| SteamIdParseError::Invalid)
+                .map_err(|_| ParseError::Invalid(Field::AuthServer))
                 .and_then(|v: u64| {
                     // Catch values here that would be clipped otherwise.
-                    (v < 2).then(|| v).ok_or(SteamIdParseError::Invalid)
+                    (v < 2).then(|| v).ok_or(ParseError::Invalid(Field::AuthServer))
                 })?,
         )
         .account_number(
             fields
                 .next()
-                .ok_or(SteamIdParseError::TooShort)?
+                .ok_or(ParseError::TooShort)?
                 .parse()
-                .map_err(|_| SteamIdParseError::Invalid)
+                .map_err(|_| ParseError::Invalid(Field::AccountNumber))
                 .and_then(|v: u64| {
                     // Account Number is only 31 bits or less.
                     (v < 2u64.pow(31))
                         .then(|| v)
-                        .ok_or(SteamIdParseError::Invalid)
+                        .ok_or(ParseError::Invalid(Field::AccountNumber))
                 })?,
         )
         // SteamId2 is only ever used for individual 'U'sers.
@@ -289,40 +333,40 @@ fn parse_from_steamid2(s: &str) -> Result<SteamIdBuilder, SteamIdParseError> {
     Ok(steamid)
 }
 
-fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, SteamIdParseError> {
+fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, ParseError> {
     // SteamId3 must be terminated with a bracket.
-    if s.chars().last().ok_or(SteamIdParseError::TooShort)? != ']' {
-        return Err(SteamIdParseError::UknownFormat);
+    if s.chars().last().ok_or(ParseError::TooShort)? != ']' {
+        return Err(ParseError::UknownFormat);
     }
     let steam3 = s
         .get(1..s.len() - 1)
-        .ok_or(SteamIdParseError::UknownFormat)?;
+        .ok_or(ParseError::UknownFormat)?;
     let mut fields = steam3.split(':');
-    let acc_type = fields.next().ok_or(SteamIdParseError::TooShort)?;
-    let universe = fields.next().ok_or(SteamIdParseError::TooShort)?;
-    let auth_server = fields.next().ok_or(SteamIdParseError::TooShort)?;
+    let acc_type = fields.next().ok_or(ParseError::TooShort)?;
+    let universe = fields.next().ok_or(ParseError::TooShort)?;
+    let auth_server = fields.next().ok_or(ParseError::TooShort)?;
     let steamid = SteamIdBuilder::new()
-        .universe(u8::from_str(universe).map_err(|_| SteamIdParseError::Invalid)?)
+        .universe(u8::from_str(universe).map_err(|_| ParseError::Invalid(Field::Universe))?)
         .authentication_server(
             auth_server
                 .parse()
-                .map_err(|_| SteamIdParseError::Invalid)
+                .map_err(|_| ParseError::Invalid(Field::AuthServer))
                 .map(|v: u64| v & mask::AUTH_SERVER)
                 ?,
         )
         .account_number(
             auth_server
                 .parse::<u64>()
-                .map_err(|_| SteamIdParseError::Invalid)
+                .map_err(|_| ParseError::Invalid(Field::AccountNumber))
                 .and_then(|v: u64| {
                     // Account Number is only 31 bits or less.
                     (v <= u32::MAX as u64)
                         .then(|| v)
-                        .ok_or(SteamIdParseError::Invalid)
+                        .ok_or(ParseError::Invalid(Field::AccountNumber))
                 })?
                 >> shift::ACCOUNT_NUMBER,
         )
-        .account_type(char::from_str(acc_type).map_err(|_| SteamIdParseError::Invalid)?);
+        .account_type(char::from_str(acc_type).map_err(|_| ParseError::Invalid(Field::AccountType))?);
     Ok(steamid)
 }
 
@@ -458,7 +502,7 @@ impl From<&SteamId> for u64 {
 }
 
 impl FromStr for SteamId {
-    type Err = SteamIdParseError;
+    type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(SteamIdBuilder::from_str(s)?.finish())

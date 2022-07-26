@@ -19,6 +19,7 @@ impl Default for Instance {
 
 impl From<Instance> for u32 {
     #[rustfmt::skip]
+    #[allow(clippy::identity_op)]
     fn from(instance: Instance) -> Self {
         use Instance::*;
         match instance {
