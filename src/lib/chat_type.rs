@@ -1,5 +1,8 @@
 use crate::{mask, shift, SteamId};
 
+#[allow(unused_imports)]
+use crate::account_type::AccountType;
+
 /// Defines the type of Chat a [AccountType::Chat] can be.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ChatType {

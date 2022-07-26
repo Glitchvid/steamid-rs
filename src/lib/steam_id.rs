@@ -9,7 +9,7 @@ use crate::universe::Universe;
 use crate::{mask, shift};
 use crate::{ChatType, Instance};
 
-use self::errors::{ParseError, Field};
+use self::errors::{Field, ParseError};
 
 pub mod errors {
     //! Module to disambiguate our error-related types.
@@ -18,7 +18,7 @@ pub mod errors {
     /// Parsing components of a SteamId
     #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
     pub enum Field {
-        ///Authentication Server bit, only ever parsed directly from SteamId2.
+        /// Authentication Server bit, only ever parsed directly from SteamId2.
         ///
         /// Values exceeding 1 fail during parsing.
         /// * STEAM_X:**Y**:Z
@@ -26,7 +26,7 @@ pub mod errors {
         /// 31-bit number, so values exceeding `2147483647` fail.
         ///
         /// Value is parsed directly from the Z value in a SteamId2,
-        /// for SteamId3 the value is packed with the `AuthServer` bit
+        /// for SteamId3 the value is packed with the `AuthServer` bit.
         /// * STEAM_X:Y:**Z**
         /// * \[X:Y:**Z**]
         AccountNumber,
@@ -34,7 +34,11 @@ pub mod errors {
         /// Only directly parsed in SteamId3 formats.
         /// * \[**X**:Y:Z]
         AccountType,
+        /// Almost always `1`.
+        /// * STEAM_**X**:Y:Z
+        /// * \[X:**Y**:Z]
         Universe,
+        /// Failed to parse the value into a [u64].
         SteamId64,
     }
 
