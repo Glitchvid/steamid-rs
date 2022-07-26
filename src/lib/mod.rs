@@ -1,6 +1,59 @@
-//! Todo:
+//! Parse, query, and modify SteamIds in idiomatic Rust – with minimal dependencies.
 //!
-//! TOP LEVEL DOCUMENTATION
+//! This crate exposes two main types, one for "reading" SteamIds,
+//! and the other for "modifying" or *building* them.
+//! # [SteamId]
+//! Used to  query a SteamId for its values.
+//! #### - Examples
+//! ```
+//! use steamid::{SteamId, IdFormat};
+//! // Parsing from a SteamId3 string.
+//! let user: SteamId = "[U:1:30688105]".parse().unwrap();
+//!
+//! // We can now get the account number
+//! println!("Account Number: {}", user.account_number());
+//! // Or the profile URL
+//! println!("Profile URL: {}", IdFormat::Url(&user));
+//! // Or the SteamId2 representation
+//! assert_eq!(IdFormat::SteamId2(&user).to_string(), "STEAM_1:1:15344052");
+//! ```
+//! * Parsing different SteamId representations.
+//! ```
+//! use steamid::SteamId;
+//! // From a SteamId3 string.
+//! let user: SteamId = "[U:1:30688105]".parse().unwrap();
+//! // From a SteamId2 string.
+//! let user: SteamId = "STEAM_1:1:15344052".parse().unwrap();
+//! // From a SteamId2Legacy string.
+//! let user: SteamId = "STEAM_0:1:15344052".parse().unwrap();
+//! // From a SteamId64 string.
+//! let user: SteamId = "76561197990953833".parse().unwrap();
+//! ```
+//! # [SteamIdBuilder]
+//! Used to build or modify underlying values.
+//! #### - Examples
+//! * Specify a SteamId from the ground up.
+//! ```
+//! use steamid::SteamIdBuilder;
+//!
+//! let player = SteamIdBuilder::new()
+//!     .authentication_server(1)
+//!     .account_number(15344052)
+//!     .account_type('U')
+//!     .instance(4)
+//!     .finish();
+//! assert_eq!(player.id, 76561210875855721)
+//! ```
+//! * Modify an existing SteamId
+//! ```
+//! use steamid::{SteamId, SteamIdBuilder, IdFormat};
+//!
+//! let base = SteamId::from(76561197990953833);
+//! // Turn the user into a clan account.
+//! let group = SteamIdBuilder::from(&base).account_type('g').finish();
+//! println!("{}", IdFormat::Url(&group));
+//! ```
+//!
 
 mod account_type;
 mod chat_type;
@@ -8,7 +61,7 @@ mod instance;
 mod steam_id;
 mod universe;
 
-// Re-Exports
+// Exports
 pub use account_type::*;
 pub use chat_type::*;
 pub use instance::*;
