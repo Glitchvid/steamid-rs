@@ -150,7 +150,11 @@ fn from_steamid3_str() {
     );
     assert!(
         SteamId::from_str("[G:1:3").is_err(),
-        "Able to parse valid SteamId3"
+        "Able to parse invalid SteamId3"
+    );
+    assert!(
+        SteamId::from_str("[0:1:3]").is_err(),
+        "Able to parse SteamId3 with numeric account type"
     );
     assert!(
         SteamId::from_str("[U:1:4294967296]").is_err(),

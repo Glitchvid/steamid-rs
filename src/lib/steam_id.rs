@@ -351,8 +351,7 @@ fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, ParseError> {
             auth_server
                 .parse()
                 .map_err(|_| ParseError::Invalid(Field::AuthServer))
-                .map(|v: u64| v & mask::AUTH_SERVER)
-                ?,
+                .map(|v: u64| v & mask::AUTH_SERVER)?,
         )
         .account_number(
             auth_server
@@ -366,7 +365,16 @@ fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, ParseError> {
                 })?
                 >> shift::ACCOUNT_NUMBER,
         )
-        .account_type(char::from_str(acc_type).map_err(|_| ParseError::Invalid(Field::AccountType))?);
+        .account_type(
+            char::from_str(acc_type)
+                .map_err(|_| ParseError::Invalid(Field::AccountType))
+                .and_then(|v| {
+                    // SteamId3 should only accept alphabet characters.
+                    v.is_ascii_alphabetic()
+                        .then(|| v)
+                        .ok_or(ParseError::Invalid(Field::AccountType))
+                })?,
+        );
     Ok(steamid)
 }
 
