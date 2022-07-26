@@ -265,14 +265,24 @@ fn parse_from_steamid2(s: &str) -> Result<SteamIdBuilder, SteamIdParseError> {
                 .next()
                 .ok_or(SteamIdParseError::TooShort)?
                 .parse()
-                .map_err(|_| SteamIdParseError::Invalid)?,
+                .map_err(|_| SteamIdParseError::Invalid)
+                .and_then(|v: u64| {
+                    // Catch values here that would be clipped otherwise.
+                    (v < 2).then(|| v).ok_or(SteamIdParseError::Invalid)
+                })?,
         )
         .account_number(
             fields
                 .next()
                 .ok_or(SteamIdParseError::TooShort)?
                 .parse()
-                .map_err(|_| SteamIdParseError::Invalid)?,
+                .map_err(|_| SteamIdParseError::Invalid)
+                .and_then(|v: u64| {
+                    // Account Number is only 31 bits or less.
+                    (v < 2u64.pow(31))
+                        .then(|| v)
+                        .ok_or(SteamIdParseError::Invalid)
+                })?,
         )
         // SteamId2 is only ever used for individual 'U'sers.
         .account_type('U');
@@ -303,7 +313,13 @@ fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, SteamIdParseError> {
         .account_number(
             auth_server
                 .parse::<u64>()
-                .map_err(|_| SteamIdParseError::Invalid)?
+                .map_err(|_| SteamIdParseError::Invalid)
+                .and_then(|v: u64| {
+                    // Account Number is only 31 bits or less.
+                    (v <= u32::MAX as u64)
+                        .then(|| v)
+                        .ok_or(SteamIdParseError::Invalid)
+                })?
                 >> shift::ACCOUNT_NUMBER,
         )
         .account_type(char::from_str(acc_type).map_err(|_| SteamIdParseError::Invalid)?);

@@ -79,6 +79,18 @@ fn from_steamid2_str() {
         SteamId::from_str("STEAM_").is_err(),
         "Able to parse blank SteamId"
     );
+    assert!(
+        SteamId::from_str("STEAM_0:1:2147483648").is_err(),
+        "Able to parse overflowing SteamId2 (Account Number)"
+    );
+    assert!(
+        SteamId::from_str("STEAM_0:2:1").is_err(),
+        "Able to parse overflowing SteamId2 (Authentication Server)"
+    );
+    assert!(
+        SteamId::from_str("STEAM_256:1:1").is_err(),
+        "Able to parse overflowing SteamId2 (Universe)"
+    );
 
     // Actually evaluate some values.
     let mitch = SteamId::from_str("STEAM_1:1:485059260").unwrap();
@@ -107,7 +119,7 @@ fn from_steamid3_str() {
         "Unable to parse valid SteamId3"
     );
     assert!(
-        SteamId::from_str("STEAM_0:1:4294967295").is_ok(),
+        SteamId::from_str("[U:1:4294967295]").is_ok(),
         "Unable to parse last valid SteamId3"
     );
 
@@ -139,6 +151,10 @@ fn from_steamid3_str() {
     assert!(
         SteamId::from_str("[G:1:3").is_err(),
         "Able to parse valid SteamId3"
+    );
+    assert!(
+        SteamId::from_str("[U:1:4294967296]").is_err(),
+        "Able to parse overflowing SteamId3"
     );
 
     // Actually evaluate some values.
