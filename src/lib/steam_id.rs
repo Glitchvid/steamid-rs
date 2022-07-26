@@ -225,12 +225,17 @@ impl FromStr for SteamIdBuilder {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.trim();
-        let mut chars = s.chars();
-        match chars.next().ok_or(SteamIdParseError::Empty)? {
-            '0'..='9' => parse_from_steamid64(s),
-            'S' => parse_from_steamid2(s),
-            '[' => parse_from_steamid3(s),
-            _ => Err(SteamIdParseError::UknownFormat),
+        // No valid SteamId string can be longer than 32 bytes.
+        if s.len() > 32 {
+            Err(SteamIdParseError::UknownFormat)
+        } else {
+            // Only ever ASCII values in a SteamId so treat as bytes for speed.
+            match s.as_bytes().get(0).ok_or(SteamIdParseError::Empty)? {
+                b'0'..=b'9' => parse_from_steamid64(s),
+                b'S' => parse_from_steamid2(s),
+                b'[' => parse_from_steamid3(s),
+                _ => Err(SteamIdParseError::UknownFormat),
+            }
         }
     }
 }
