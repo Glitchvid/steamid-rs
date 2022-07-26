@@ -41,12 +41,12 @@ pub mod errors {
     impl Display for Field {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             match self {
-                Field::AuthServer => write!(f, "Authentication Server"),
-                Field::AccountNumber => write!(f, "Account Number"),
-                Field::Instance => write!(f, "Instance"),
-                Field::AccountType => write!(f, "Account Type"),
-                Field::Universe => write!(f, "Universe"),
-                Field::SteamId64 => write!(f, "SteamId64"),
+                Field::AuthServer => write!(f, "authentication server"),
+                Field::AccountNumber => write!(f, "account number"),
+                Field::Instance => write!(f, "instance"),
+                Field::AccountType => write!(f, "account type"),
+                Field::Universe => write!(f, "universe"),
+                Field::SteamId64 => write!(f, "steamid64"),
             }
         }
     }
@@ -76,7 +76,7 @@ pub mod errors {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             match self {
                 ParseError::UknownFormat => write!(f, "unable to identify SteamId format"),
-                ParseError::Invalid(v) => write!(f, "invalid value {v}"),
+                ParseError::Invalid(v) => write!(f, "invalid value in {v}"),
                 ParseError::TooShort => write!(f, "unexpected end of string"),
                 ParseError::Empty => write!(f, "input empty"),
                 ParseError::Other(v) => write!(f, "{v}"),
