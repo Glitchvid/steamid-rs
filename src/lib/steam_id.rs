@@ -299,12 +299,13 @@ fn parse_from_steamid64(s: &str) -> Result<SteamIdBuilder, ParseError> {
 }
 
 fn parse_from_steamid2(s: &str) -> Result<SteamIdBuilder, ParseError> {
-    let steam2 = s.get(6..).ok_or(ParseError::UknownFormat)?;
+    use ParseError::*;
+    let steam2 = s.get(6..).ok_or(UknownFormat)?;
     let mut fields = steam2.split(':');
     let steamid = SteamIdBuilder::new()
         .universe(
-            u8::from_str(fields.next().ok_or(ParseError::TooShort)?)
-                .map_err(|_| ParseError::Invalid(Field::Universe))?
+            u8::from_str(fields.next().ok_or(TooShort)?)
+                .map_err(|_| Invalid(Field::Universe))?
                 // Interpret 'Unspecified' universe as 'Public' to
                 // comply with Valve's implementation of steamID in
                 // legacy Source/GoldSrc engine games.
@@ -313,27 +314,25 @@ fn parse_from_steamid2(s: &str) -> Result<SteamIdBuilder, ParseError> {
         .authentication_server(
             fields
                 .next()
-                .ok_or(ParseError::TooShort)?
+                .ok_or(TooShort)?
                 .parse()
-                .map_err(|_| ParseError::Invalid(Field::AuthServer))
+                .map_err(|_| Invalid(Field::AuthServer))
                 .and_then(|v: u64| {
                     // Catch values here that would be clipped otherwise.
-                    (v < 2)
-                        .then(|| v)
-                        .ok_or(ParseError::Invalid(Field::AuthServer))
+                    (v < 2).then(|| v).ok_or(Invalid(Field::AuthServer))
                 })?,
         )
         .account_number(
             fields
                 .next()
-                .ok_or(ParseError::TooShort)?
+                .ok_or(TooShort)?
                 .parse()
-                .map_err(|_| ParseError::Invalid(Field::AccountNumber))
+                .map_err(|_| Invalid(Field::AccountNumber))
                 .and_then(|v: u64| {
                     // Account Number is only 31 bits or less.
                     (v < 2u64.pow(31))
                         .then(|| v)
-                        .ok_or(ParseError::Invalid(Field::AccountNumber))
+                        .ok_or(Invalid(Field::AccountNumber))
                 })?,
         )
         // SteamId2 is only ever used for individual 'U'sers.
@@ -342,17 +341,20 @@ fn parse_from_steamid2(s: &str) -> Result<SteamIdBuilder, ParseError> {
 }
 
 fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, ParseError> {
+    use ParseError::*;
+    let inv_an = Invalid(Field::AccountNumber);
+    let inv_at = Invalid(Field::AccountType);
     // SteamId3 must be terminated with a bracket.
-    if s.chars().last().ok_or(ParseError::TooShort)? != ']' {
-        return Err(ParseError::UknownFormat);
+    if s.chars().last().ok_or(TooShort)? != ']' {
+        return Err(UknownFormat);
     }
-    let steam3 = s.get(1..s.len() - 1).ok_or(ParseError::UknownFormat)?;
+    let steam3 = s.get(1..s.len() - 1).ok_or(UknownFormat)?;
     let mut fields = steam3.split(':');
-    let acc_type = fields.next().ok_or(ParseError::TooShort)?;
-    let universe = fields.next().ok_or(ParseError::TooShort)?;
-    let auth_server = fields.next().ok_or(ParseError::TooShort)?;
+    let acc_type = fields.next().ok_or(TooShort)?;
+    let universe = fields.next().ok_or(TooShort)?;
+    let auth_server = fields.next().ok_or(TooShort)?;
     let steamid = SteamIdBuilder::new()
-        .universe(u8::from_str(universe).map_err(|_| ParseError::Invalid(Field::Universe))?)
+        .universe(u8::from_str(universe).map_err(|_| Invalid(Field::Universe))?)
         .authentication_server(
             auth_server
                 .parse()
@@ -362,25 +364,17 @@ fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, ParseError> {
         .account_number(
             auth_server
                 .parse::<u64>()
-                .map_err(|_| ParseError::Invalid(Field::AccountNumber))
+                .map_err(|_| inv_an)
                 .and_then(|v: u64| {
                     // Account Number is only 31 bits or less.
-                    (v <= u32::MAX as u64)
-                        .then(|| v)
-                        .ok_or(ParseError::Invalid(Field::AccountNumber))
+                    (v <= u32::MAX as u64).then(|| v).ok_or(inv_an)
                 })?
                 >> shift::ACCOUNT_NUMBER,
         )
-        .account_type(
-            char::from_str(acc_type)
-                .map_err(|_| ParseError::Invalid(Field::AccountType))
-                .and_then(|v| {
-                    // SteamId3 should only accept alphabet characters.
-                    v.is_ascii_alphabetic()
-                        .then(|| v)
-                        .ok_or(ParseError::Invalid(Field::AccountType))
-                })?,
-        );
+        .account_type(char::from_str(acc_type).map_err(|_| inv_at).and_then(|v| {
+            // SteamId3 should only accept alphabet characters.
+            v.is_ascii_alphabetic().then(|| v).ok_or(inv_at)
+        })?);
     Ok(steamid)
 }
 
