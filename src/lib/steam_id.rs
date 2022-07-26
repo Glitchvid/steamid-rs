@@ -291,7 +291,9 @@ fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, SteamIdParseError> {
         .authentication_server(
             auth_server
                 .parse()
-                .map_err(|_| SteamIdParseError::Invalid)?,
+                .map_err(|_| SteamIdParseError::Invalid)
+                .map(|v: u64| v & mask::AUTH_SERVER)
+                ?,
         )
         .account_number(
             auth_server

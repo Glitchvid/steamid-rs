@@ -153,4 +153,17 @@ fn from_steamid3_str() {
     assert_eq!(mitch.authentication_server(), 1);
     assert_eq!(mitch.account_type(), AccountType::Invalid);
     assert_eq!(mitch.instance(), Instance::from(1));
+
+    let zero = SteamId::from_str("[U:1:2]").unwrap();
+    assert_eq!(
+        zero.authentication_server(),
+        0,
+        "Not properly masking auth server bit"
+    );
+    let one = SteamId::from_str("[U:1:3]").unwrap();
+    assert_eq!(
+        one.authentication_server(),
+        1,
+        "Not properly masking auth server bit"
+    );
 }
