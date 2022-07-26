@@ -288,7 +288,9 @@ impl FromStr for SteamIdBuilder {
 
 fn parse_from_steamid64(s: &str) -> Result<SteamIdBuilder, ParseError> {
     Ok(SteamIdBuilder {
-        id: s.parse::<u64>().map_err(|_| ParseError::Invalid(Field::SteamId64))?,
+        id: s
+            .parse::<u64>()
+            .map_err(|_| ParseError::Invalid(Field::SteamId64))?,
     })
 }
 
@@ -312,7 +314,9 @@ fn parse_from_steamid2(s: &str) -> Result<SteamIdBuilder, ParseError> {
                 .map_err(|_| ParseError::Invalid(Field::AuthServer))
                 .and_then(|v: u64| {
                     // Catch values here that would be clipped otherwise.
-                    (v < 2).then(|| v).ok_or(ParseError::Invalid(Field::AuthServer))
+                    (v < 2)
+                        .then(|| v)
+                        .ok_or(ParseError::Invalid(Field::AuthServer))
                 })?,
         )
         .account_number(
@@ -338,9 +342,7 @@ fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, ParseError> {
     if s.chars().last().ok_or(ParseError::TooShort)? != ']' {
         return Err(ParseError::UknownFormat);
     }
-    let steam3 = s
-        .get(1..s.len() - 1)
-        .ok_or(ParseError::UknownFormat)?;
+    let steam3 = s.get(1..s.len() - 1).ok_or(ParseError::UknownFormat)?;
     let mut fields = steam3.split(':');
     let acc_type = fields.next().ok_or(ParseError::TooShort)?;
     let universe = fields.next().ok_or(ParseError::TooShort)?;
