@@ -160,6 +160,10 @@ fn from_steamid3_str() {
         SteamId::from_str("[U:1:4294967296]").is_err(),
         "Able to parse overflowing SteamId3"
     );
+    assert!(
+        SteamId::from_str("[U:256:1]").is_err(),
+        "Able to parse overflowing SteamId3"
+    );
 
     // Actually evaluate some values.
     let mitch = SteamId::from_str("[U:1:970118521]").unwrap();
