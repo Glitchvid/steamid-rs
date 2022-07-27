@@ -57,6 +57,7 @@
 
 mod account_type;
 mod chat_type;
+pub mod errors;
 mod instance;
 mod steam_id;
 mod universe;
