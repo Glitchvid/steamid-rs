@@ -48,12 +48,12 @@ fn replace_bits(val: u64, mask: u64, new: u64) -> u64 {
 ///     .account_type('U')
 ///     .instance(4)
 ///     .finish();
-/// assert_eq!(player.id, 76561210875855721)
+/// assert_eq!(u64::from(&player), 76561210875855721)
 /// ```
 
 #[derive(Debug, Clone)]
 pub struct SteamIdBuilder {
-    id: u64,
+    pub(crate) id: u64,
 }
 
 impl SteamIdBuilder {
@@ -178,6 +178,12 @@ impl SteamIdBuilder {
         let val = u8::from(val) as u64;
         self.id = replace_bits(self.id, mask::UNIVERSE, val << shift::UNIVERSE);
         self
+    }
+}
+
+impl From<SteamId> for SteamIdBuilder {
+    fn from(steamid: SteamId) -> Self {
+        SteamIdBuilder { id: steamid.id }
     }
 }
 
@@ -356,6 +362,16 @@ fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, ParseError> {
 /// println!("steamID:  \t{}", IdFormat::SteamId2(&steamid));
 /// println!("steamID3: \t{}", IdFormat::SteamId3(&steamid));
 /// ```
+/// - Modifying a SteamId
+/// ```
+/// use steamid::{SteamId, SteamIdBuilder, IdFormat};
+///
+/// let original = SteamId::from(76561197990953833);
+/// let modified = SteamIdBuilder::from(original).account_type('g').finish();
+/// println!("steamID64:\t{}", IdFormat::SteamId64(&modified));
+/// println!("steamID:  \t{}", IdFormat::SteamId2(&modified));
+/// println!("steamID3: \t{}", IdFormat::SteamId3(&modified));
+/// ```
 /// - Building from a [SteamIdBuilder]
 /// ```
 /// use steamid::SteamIdBuilder;
@@ -366,11 +382,11 @@ fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, ParseError> {
 ///     .account_type('U')
 ///     .instance(4)
 ///     .finish();
-/// assert_eq!(player.id, 76561210875855721)
+/// assert_eq!(u64::from(&player), 76561210875855721)
 /// ```
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct SteamId {
-    pub id: u64,
+    pub(crate) id: u64,
 }
 
 impl SteamId {
