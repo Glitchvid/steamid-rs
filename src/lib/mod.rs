@@ -3,7 +3,7 @@
 //! This crate exposes two main types, one for "reading" SteamIds,
 //! and the other for "modifying" or *building* them.
 //! # [SteamId]
-//! Used to  query a SteamId for its values.
+//! Used to  query a [SteamId] for its values.
 //! #### - Examples
 //! ```
 //! use steamid::{SteamId, IdFormat};
@@ -42,7 +42,7 @@
 //!     .account_type('U')
 //!     .instance(4)
 //!     .finish();
-//! assert_eq!(player.id, 76561210875855721)
+//! assert_eq!(u64::from(&player), 76561210875855721)
 //! ```
 //! * Modify an existing SteamId
 //! ```

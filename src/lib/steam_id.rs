@@ -297,16 +297,41 @@ fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, ParseError> {
     Ok(steamid)
 }
 
-/// Represents a complete SteamId for querying values.
+/// "Read-Only" SteamId with associated methods for getting values.
 ///
-/// To safely change the values of an existing SteamId convert into a
-/// SteamIdBuilder, and use the builder to set desired values,
-/// then `.finish()` the builder to get the modified SteamId.
+/// # Formats
+/// While a SteamId is internally a [u64], there are multiple formats used to
+/// display the component values.
+/// ### SteamId64
+/// This is the raw 64-bit SteamId value.
 ///
-/// Using an intermediary builder allows cleaner one-line syntax, instead of
-/// using a mutable steamid with setter and getter functions.
+/// **Example:** `76561197990953833`
+/// ### SteamId2
+/// This an older representation, usually used in Source-engine games.
 ///
-///  # Examples #
+/// `STEAM_X:Y:Z`
+/// - **X** is the [Universe]
+/// - **Y** is the [Field::AuthServer]
+/// - **Z** is the [Field::AccountNumber]
+///
+/// **Example:** `STEAM_1:1:15344052`
+///
+/// See [IdFormat::SteamId2] and [IdFormat::SteamId2Legacy] if you'd like to know more.
+/// ### SteamId3
+/// This is the most recent format.
+///
+/// `[X:Y:Z]`
+/// - **X** is the [AccountType]
+/// - **Y** is the [Universe]
+/// - **Z** is both the [Field::AccountNumber] and [Field::AuthServer] packed as 32-bits.
+///
+/// **Example:** `[U:1:30688105]`
+/// # Modifying a SteamId
+/// To safely change the values of an existing SteamId, convert into a
+/// [SteamIdBuilder] using the `SteamIdBuilder::from()` method,
+/// and use the associated functions to set desired values;
+/// then `.finish()` the builder to return a SteamId.
+/// # Examples
 /// - Getting a SteamId64 directly from a u64
 /// ```
 /// use steamid::{SteamId, IdFormat};
@@ -436,7 +461,7 @@ impl FromStr for SteamId {
     }
 }
 
-/// Used to wrap a SteamId to specify output formatting, since SteamId does not implement Display.
+/// Used to wrap a [SteamId] to specify output formatting, since [SteamId] does not implement [Display].
 ///
 /// # Examples #
 ///

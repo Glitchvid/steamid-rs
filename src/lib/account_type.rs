@@ -3,10 +3,11 @@ use std::fmt::Display;
 use crate::{mask, shift};
 use crate::{ChatType, SteamId};
 
-/// Defines the role for this SteamId
+/// Defines the role this SteamId is used for.
 #[derive(Debug, PartialEq, Clone, Copy, Eq, PartialOrd, Ord, Hash)]
 pub enum AccountType {
     Invalid,
+    // Normal Steam Accounts are usually this
     Individual,
     Multiseat,
     /// Servers registered with a 'Game Server Login Token'
