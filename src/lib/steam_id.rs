@@ -275,9 +275,9 @@ fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, ParseError> {
     let inv_an = Invalid(Field::AccountNumber);
     let inv_at = Invalid(Field::AccountType);
     // SteamId3 must be terminated with a bracket.
-    if s.chars().last().ok_or(TooShort)? != ']' {
-        return Err(UnknownFormat);
-    }
+    (s.chars().last().ok_or(TooShort)? == ']')
+        .then(|| ())
+        .ok_or(UnknownFormat)?;
     let steam3 = s.get(1..s.len() - 1).ok_or(UnknownFormat)?;
     let mut fields = steam3.split(':');
     let acc_type = fields.next().ok_or(TooShort)?;
