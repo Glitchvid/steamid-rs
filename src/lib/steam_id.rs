@@ -95,7 +95,7 @@ impl SteamIdBuilder {
     ///
     /// Only meaningful values are `0` or `1`, anything `> 1` is capped to `1`.
     pub fn authentication_server(mut self, val: u64) -> Self {
-        let new_val = if val >= 1 { 1 } else { 0 };
+        let new_val = val.min(1);
         self.id = replace_bits(self.id, mask::AUTH_SERVER, new_val << shift::AUTH_SERVER);
         self
     }
@@ -199,17 +199,16 @@ impl FromStr for SteamIdBuilder {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.trim();
         // No valid SteamId string can be longer than 32 bytes.
-        if s.len() > 32 {
-            Err(ParseError::UnknownFormat)
-        } else {
+        (s.len() < 32)
+            .then(||
             // Only ever ASCII values in a SteamId so treat as bytes for speed.
             match s.as_bytes().get(0).ok_or(ParseError::Empty)? {
                 b'0'..=b'9' => parse_from_steamid64(s),
                 b'S' => parse_from_steamid2(s),
                 b'[' => parse_from_steamid3(s),
                 _ => Err(ParseError::UnknownFormat),
-            }
-        }
+            })
+            .ok_or(ParseError::UnknownFormat)?
     }
 }
 
