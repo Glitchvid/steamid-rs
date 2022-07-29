@@ -80,6 +80,10 @@ fn from_steamid2_str() {
         "Able to parse blank SteamId"
     );
     assert!(
+        SteamId::from_str("STEEM_1:1:1").is_err(),
+        "Able to parse SteamId that doesn't say 'STEAM'"
+    );
+    assert!(
         SteamId::from_str("STEAM_0:1:2147483648").is_err(),
         "Able to parse overflowing SteamId2 (Account Number)"
     );
