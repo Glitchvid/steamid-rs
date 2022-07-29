@@ -224,9 +224,7 @@ fn parse_from_steamid64(s: &str) -> Result<SteamIdBuilder, ParseError> {
 
 fn parse_from_steamid2(s: &str) -> Result<SteamIdBuilder, ParseError> {
     use ParseError::*;
-    (s.get(..6).ok_or(UnknownFormat)? == "STEAM_")
-        .then(|| ())
-        .ok_or(UnknownFormat)?;
+    s.starts_with("STEAM_").then(|| ()).ok_or(UnknownFormat)?;
     let steam2 = s.get(6..).ok_or(UnknownFormat)?;
     let mut fields = steam2.split(':');
     let steamid = SteamIdBuilder::new()
