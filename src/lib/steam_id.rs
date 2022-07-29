@@ -262,6 +262,9 @@ fn parse_from_steamid2(s: &str) -> Result<SteamIdBuilder, ParseError> {
         )
         // SteamId2 is only ever used for individual 'U'sers.
         .account_type('U');
+    // A valid SteamId2 input should be empty after parsing all 3 fields,
+    // if it isn't, it was formatted incorrectly.
+    fields.next().map_or(Ok(()), |_| Err(UnknownFormat))?;
     Ok(steamid)
 }
 

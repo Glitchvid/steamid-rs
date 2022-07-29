@@ -91,6 +91,10 @@ fn from_steamid2_str() {
         SteamId::from_str("STEAM_256:1:1").is_err(),
         "Able to parse overflowing SteamId2 (Universe)"
     );
+    assert!(
+        SteamId::from_str("STEAM_0:1:2:3").is_err(),
+        "Able to parse badly formatted SteamId2 (extra field)"
+    );
 
     // Actually evaluate some values.
     let mitch = SteamId::from_str("STEAM_1:1:485059260").unwrap();
