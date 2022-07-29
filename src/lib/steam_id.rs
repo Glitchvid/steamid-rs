@@ -200,14 +200,14 @@ impl FromStr for SteamIdBuilder {
         let s = s.trim();
         // No valid SteamId string can be longer than 32 bytes.
         if s.len() > 32 {
-            Err(ParseError::UknownFormat)
+            Err(ParseError::UnknownFormat)
         } else {
             // Only ever ASCII values in a SteamId so treat as bytes for speed.
             match s.as_bytes().get(0).ok_or(ParseError::Empty)? {
                 b'0'..=b'9' => parse_from_steamid64(s),
                 b'S' => parse_from_steamid2(s),
                 b'[' => parse_from_steamid3(s),
-                _ => Err(ParseError::UknownFormat),
+                _ => Err(ParseError::UnknownFormat),
             }
         }
     }
@@ -225,7 +225,7 @@ fn parse_from_steamid64(s: &str) -> Result<SteamIdBuilder, ParseError> {
 
 fn parse_from_steamid2(s: &str) -> Result<SteamIdBuilder, ParseError> {
     use ParseError::*;
-    let steam2 = s.get(6..).ok_or(UknownFormat)?;
+    let steam2 = s.get(6..).ok_or(UnknownFormat)?;
     let mut fields = steam2.split(':');
     let steamid = SteamIdBuilder::new()
         .universe(
@@ -271,9 +271,9 @@ fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, ParseError> {
     let inv_at = Invalid(Field::AccountType);
     // SteamId3 must be terminated with a bracket.
     if s.chars().last().ok_or(TooShort)? != ']' {
-        return Err(UknownFormat);
+        return Err(UnknownFormat);
     }
-    let steam3 = s.get(1..s.len() - 1).ok_or(UknownFormat)?;
+    let steam3 = s.get(1..s.len() - 1).ok_or(UnknownFormat)?;
     let mut fields = steam3.split(':');
     let acc_type = fields.next().ok_or(TooShort)?;
     let universe = fields.next().ok_or(TooShort)?;

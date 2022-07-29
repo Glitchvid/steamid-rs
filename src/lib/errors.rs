@@ -45,7 +45,7 @@ impl Display for Field {
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub enum ParseError {
     /// Failed to deduce any SteamId format during parsing.
-    UknownFormat,
+    UnknownFormat,
 
     /// Failed to interpret a value during SteamId parsing.
     ///
@@ -65,7 +65,7 @@ pub enum ParseError {
 impl Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ParseError::UknownFormat => write!(f, "unable to identify SteamId format"),
+            ParseError::UnknownFormat => write!(f, "unable to identify SteamId format"),
             ParseError::Invalid(v) => write!(f, "invalid value in {v}"),
             ParseError::TooShort => write!(f, "unexpected end of string"),
             ParseError::Empty => write!(f, "input empty"),
