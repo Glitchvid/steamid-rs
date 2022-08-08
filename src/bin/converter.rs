@@ -11,10 +11,10 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     // Dumb check, make sure they even tried providing a SteamID
-    if args.len() < 2 {
+    (args.len() >= 2).then(|| ()).unwrap_or_else(|| {
         println!("No IDs provided!");
         std::process::exit(-1);
-    }
+    });
 
     // Process all of our passed strings
     for input in args.iter().skip(1) {
