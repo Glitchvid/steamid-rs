@@ -224,6 +224,7 @@ fn parse_from_steamid64(s: &str) -> Result<SteamIdBuilder, ParseError> {
 
 fn parse_from_steamid2(s: &str) -> Result<SteamIdBuilder, ParseError> {
     use ParseError::*;
+
     s.starts_with("STEAM_").then(|| ()).ok_or(UnknownFormat)?;
     let steam2 = s.get(6..).ok_or(UnknownFormat)?;
     let mut fields = steam2.split(':');
@@ -270,6 +271,7 @@ fn parse_from_steamid2(s: &str) -> Result<SteamIdBuilder, ParseError> {
 
 fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, ParseError> {
     use ParseError::*;
+
     let inv_an = Invalid(Field::AccountNumber);
     let inv_at = Invalid(Field::AccountType);
     // SteamId3 must be terminated with a bracket.
@@ -281,6 +283,9 @@ fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, ParseError> {
     let acc_type = fields.next().ok_or(TooShort)?;
     let universe = fields.next().ok_or(TooShort)?;
     let auth_server = fields.next().ok_or(TooShort)?;
+    // A valid SteamId3 input should be empty after consuming all 3 fields –
+    // if it isn't, it was formatted incorrectly.
+    fields.next().map_or(Ok(()), |_| Err(UnknownFormat))?;
     let steamid = SteamIdBuilder::new()
         .universe(u8::from_str(universe).map_err(|_| Invalid(Field::Universe))?)
         .authentication_server(

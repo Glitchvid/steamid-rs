@@ -115,12 +115,12 @@ fn from_steamid2_str() {
 #[test]
 fn from_steamid3_str() {
     assert!(
-        SteamId::from_str("[U:0:0]").is_ok(),
-        "Unable to parse weird, but valid SteamId3"
-    );
-    assert!(
         SteamId::from_str("[U:1:3]").is_ok(),
         "Unable to parse valid SteamId3"
+    );
+    assert!(
+        SteamId::from_str("[U:0:0]").is_ok(),
+        "Unable to parse weird, but valid SteamId3"
     );
     assert!(
         SteamId::from_str("[G:1:3]").is_ok(),
@@ -171,6 +171,10 @@ fn from_steamid3_str() {
     assert!(
         SteamId::from_str("[U:256:1]").is_err(),
         "Able to parse overflowing SteamId3"
+    );
+    assert!(
+        SteamId::from_str("[U:1:3:0]").is_err(),
+        "Able to parse badly formatted SteamId3 (extra field)"
     );
 
     // Actually evaluate some values.
