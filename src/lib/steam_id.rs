@@ -304,10 +304,21 @@ fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, ParseError> {
                 })?
                 >> shift::ACCOUNT_NUMBER,
         )
-        .account_type(char::from_str(acc_type).map_err(|_| inv_at).and_then(|v| {
-            // SteamId3 should only accept alphabet characters.
-            v.is_ascii_alphabetic().then(|| v).ok_or(inv_at)
-        })?);
+        .account_type(
+            char::from_str(acc_type)
+                .map_err(|_| inv_at)
+                .and_then(|v| {
+                    // SteamId3 should only accept alphabet characters.
+                    v.is_ascii_alphabetic().then(|| v).ok_or(inv_at)
+                })
+                .and_then(|v| {
+                    // Don't accept 'invalid' account types when parsing,
+                    // unless explicitly passed.
+                    (char::from(AccountType::from(v)) == v)
+                        .then(|| v)
+                        .ok_or(inv_at)
+                })?,
+        );
     Ok(steamid)
 }
 
@@ -575,6 +586,8 @@ impl Display for IdFormat<'_> {
 /////////////////////////////////////////////////////////////////////////////
 #[cfg(test)]
 mod tests {
+    use std::hash::Hash;
+
     use crate::*;
 
     /// Ensures our documentation and everything line up with the actual defaults
@@ -757,5 +770,24 @@ mod tests {
             builder.clone().universe(Universe::Public).finish().id,
             76561197960265730
         );
+    }
+
+    /// Ensures going from Builder to Id directly and back doesn't change anything.
+    #[test]
+    fn from_reciprocity() {
+        let alfred = SteamId::from(4503603922337794);
+        assert_eq!(SteamIdBuilder::from(alfred.clone()).id, 4503603922337794);
+        assert_eq!(SteamIdBuilder::from(&alfred).id, 4503603922337794);
+    }
+
+    #[test]
+    fn equality() {
+        let alfred = SteamIdBuilder::new().account_number(1).instance(1).finish();
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        assert!(alfred == SteamId::from(76561197960265730));
+        assert!(alfred != SteamId::from(0));
+        let hash1 = alfred.hash(&mut hasher);
+        let hash2 = alfred.hash(&mut hasher);
+        assert!(hash1 == hash2);
     }
 }

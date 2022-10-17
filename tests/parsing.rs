@@ -130,6 +130,10 @@ fn from_steamid3_str() {
         SteamId::from_str("[U:1:4294967295]").is_ok(),
         "Unable to parse last valid SteamId3"
     );
+    assert!(
+        SteamId::from_str("[I:1:3]").is_ok(),
+        "Unable to parse valid SteamId3 with 'I'nvalid account type"
+    );
 
     // Things that SHOULDN'T happen:
     assert!(
@@ -163,6 +167,10 @@ fn from_steamid3_str() {
     assert!(
         SteamId::from_str("[0:1:3]").is_err(),
         "Able to parse SteamId3 with numeric account type"
+    );
+    assert!(
+        SteamId::from_str("[X:1:3]").is_err(),
+        "Able to parse SteamId3 with totally invalid account type"
     );
     assert!(
         SteamId::from_str("[U:1:4294967296]").is_err(),
