@@ -62,7 +62,28 @@ mod tests {
     #[test]
     fn value_conversion() {
         assert_eq!(ChatType::from(1), ChatType::MatchMakingLobby);
+        assert_eq!(ChatType::from(2), ChatType::Lobby);
         assert_eq!(ChatType::from(3), ChatType::None);
         assert_eq!(ChatType::from(4), ChatType::ClanChat);
+    }
+
+    #[test]
+    fn steamid_conversion() {
+        assert_eq!(
+            ChatType::from(&SteamIdBuilder::new().account_type('L').finish()),
+            ChatType::Lobby
+        );
+        assert_eq!(
+            ChatType::from(&SteamIdBuilder::new().account_type('T').finish()),
+            ChatType::MatchMakingLobby
+        );
+        assert_eq!(
+            ChatType::from(&SteamIdBuilder::new().account_type('c').finish()),
+            ChatType::ClanChat
+        );
+        assert_eq!(
+            ChatType::from(&SteamIdBuilder::new().account_type('I').finish()),
+            ChatType::None
+        );
     }
 }

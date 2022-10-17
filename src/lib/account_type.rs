@@ -127,19 +127,10 @@ impl From<&SteamId> for AccountType {
         use AccountType::*;
 
         let account_type = (steamid.id & mask::ACCOUNT_TYPE) >> shift::ACCOUNT_TYPE ;
-        match account_type {
-            0   => Invalid,
-            1   => Individual,
-            2   => Multiseat,
-            3   => GameServer,
-            4   => AnonGameServer,
-            5   => Pending,
-            6   => ContentServer,
-            7   => Clan,
-            8   => Chat(ChatType::from(steamid)),
-            9   => ConsoleUser,
-            10  => AnonUser,
-            _   => Invalid,
+        let account_typed = AccountType::from(account_type as u8);
+        match account_typed {
+            Chat(_) => Chat(ChatType::from(steamid)),
+            _ => account_typed,
         }
     }
 }
@@ -153,9 +144,82 @@ mod tests {
 
     #[test]
     fn value_conversion() {
+        // Test common cases
         assert_eq!(AccountType::from(0), AccountType::Invalid);
         assert_eq!(AccountType::from(1), AccountType::Individual);
         assert_eq!(AccountType::from(8), AccountType::Chat(ChatType::ClanChat));
-        assert_eq!(AccountType::from(100), AccountType::Invalid);
+        assert_eq!(AccountType::from(255), AccountType::Invalid);
+        assert_eq!(AccountType::from('Z'), AccountType::Invalid);
+        assert_eq!(
+            char::from(AccountType::Chat(ChatType::MatchMakingLobby)),
+            'T'
+        );
+        assert_eq!(char::from(AccountType::Chat(ChatType::Lobby)), 'L');
+        assert_eq!(char::from(AccountType::Chat(ChatType::ClanChat)), 'c');
+        assert_eq!(char::from(AccountType::Chat(ChatType::None)), 'c');
+    }
+
+    /// Ensure some simple round trip conversions
+    #[test]
+    fn account_type_reciprocity() {
+        use AccountType::*;
+        assert_eq!(
+            u8::from(AccountType::from(char::from(AccountType::from(0)))),
+            u8::from(Invalid)
+        );
+        assert_eq!(
+            u8::from(AccountType::from(char::from(AccountType::from(1)))),
+            u8::from(Individual)
+        );
+        assert_eq!(
+            u8::from(AccountType::from(char::from(AccountType::from(2)))),
+            u8::from(Multiseat)
+        );
+        assert_eq!(
+            u8::from(AccountType::from(char::from(AccountType::from(3)))),
+            u8::from(GameServer)
+        );
+        assert_eq!(
+            u8::from(AccountType::from(char::from(AccountType::from(4)))),
+            u8::from(AnonGameServer)
+        );
+        assert_eq!(
+            u8::from(AccountType::from(char::from(AccountType::from(5)))),
+            u8::from(Pending)
+        );
+        assert_eq!(
+            u8::from(AccountType::from(char::from(AccountType::from(6)))),
+            u8::from(ContentServer)
+        );
+        assert_eq!(
+            u8::from(AccountType::from(char::from(AccountType::from(7)))),
+            u8::from(Clan)
+        );
+        assert_eq!(
+            u8::from(AccountType::from(char::from(AccountType::from(8)))),
+            u8::from(Chat(ChatType::ClanChat))
+        );
+        // Console user round-trips to Invalid via Char
+        assert_eq!(
+            u8::from(AccountType::from(char::from(AccountType::from(9)))),
+            u8::from(Invalid)
+        );
+        assert_eq!(u8::from(AccountType::from(9)), u8::from(ConsoleUser));
+        assert_eq!(
+            u8::from(AccountType::from(char::from(AccountType::from(10)))),
+            u8::from(AnonUser)
+        );
+        assert_eq!(
+            u8::from(AccountType::from(char::from(AccountType::from(255)))),
+            u8::from(Invalid)
+        );
+    }
+
+    #[test]
+    fn account_type_fmt() {
+        for v in 0..=10 {
+            let f = AccountType::from(v);
+            assert_eq!(format!("{f}"), char::from(f).to_string());
+        }
     }
 }

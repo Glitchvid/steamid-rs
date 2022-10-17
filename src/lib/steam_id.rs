@@ -111,7 +111,7 @@ impl SteamIdBuilder {
         self
     }
 
-    /// Sets the account type, this can either by an [AccountType] itself, or
+    /// Sets the account type, this can either be an [AccountType] itself, or
     /// any value which can be converted.
     ///
     ///
@@ -145,7 +145,7 @@ impl SteamIdBuilder {
         new.account_type_preserve_bits(atype)
     }
 
-    /// Sets the account type, this can either by an [AccountType] itself, or
+    /// Sets the account type, this can either be an [AccountType] itself, or
     /// any value which can be converted.
     ///
     /// This is different to `account_type` in that it does not have any
@@ -160,7 +160,7 @@ impl SteamIdBuilder {
         self
     }
 
-    /// Sets the account [Instance], this can either by an Instance itself,
+    /// Sets the account [Instance], this can either be an Instance itself,
     /// or any value which can be converted.
     ///
     /// This is usually best left to whatever default value is set.

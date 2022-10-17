@@ -68,10 +68,37 @@ impl From<&SteamId> for Instance {
 mod tests {
     use crate::*;
 
+    /// Ensures our documentation and everything line up with the actual defaults
+    #[test]
+    fn defaults() {
+        assert_eq!(Instance::default(), Instance::Desktop(ChatType::default()));
+    }
+
     #[test]
     fn value_conversion() {
         assert_eq!(Instance::from(0), Instance::None(ChatType::default()));
         assert_eq!(Instance::from(1), Instance::Desktop(ChatType::default()));
         assert_eq!(Instance::from(3), Instance::Desktop(ChatType::default()));
+        assert_eq!(Instance::from(3), Instance::Desktop(ChatType::default()));
+    }
+
+    #[test]
+    fn steamid_values() {
+        assert_eq!(
+            SteamId::from(76561193729995004).instance(),
+            Instance::None(ChatType::None)
+        );
+        assert_eq!(
+            SteamId::from(76561198024962300).instance(),
+            Instance::Desktop(ChatType::None)
+        );
+        assert_eq!(
+            SteamId::from(76561202319929596).instance(),
+            Instance::Console(ChatType::None)
+        );
+        assert_eq!(
+            SteamId::from(76561210909864188).instance(),
+            Instance::Web(ChatType::None)
+        );
     }
 }
