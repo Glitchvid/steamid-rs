@@ -85,4 +85,14 @@ mod tests {
         assert_eq!(Universe::from(4), Universe::Dev);
         assert_eq!(Universe::from(100), Universe::Unspecified);
     }
+
+    #[test]
+    fn universe_fmt_debug() {
+        for v in 1..=6 {
+            let uv = Universe::from(v);
+            let fmt = uv.to_string();
+            let dbg = format!("{:?}", uv);
+            assert!(fmt == dbg);
+        }
+    }
 }

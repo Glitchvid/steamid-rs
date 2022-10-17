@@ -155,8 +155,30 @@ mod tests {
             'T'
         );
         assert_eq!(char::from(AccountType::Chat(ChatType::Lobby)), 'L');
-        assert_eq!(char::from(AccountType::Chat(ChatType::ClanChat)), 'c');
+        assert_eq!(
+            char::from(AccountType::Chat(ChatType::MatchMakingLobby)),
+            'T'
+        );
         assert_eq!(char::from(AccountType::Chat(ChatType::None)), 'c');
+    }
+
+    #[test]
+    fn steamid_chat_conversion() {
+        let bld = SteamIdBuilder::new()
+            .account_number(1)
+            .authentication_server(1);
+        assert_eq!(
+            AccountType::from(&bld.clone().account_type('L').finish()),
+            AccountType::Chat(ChatType::Lobby)
+        );
+        assert_eq!(
+            AccountType::from(&bld.clone().account_type('T').finish()),
+            AccountType::Chat(ChatType::MatchMakingLobby)
+        );
+        assert_eq!(
+            AccountType::from(&bld.clone().account_type('c').finish()),
+            AccountType::Chat(ChatType::ClanChat)
+        );
     }
 
     /// Ensure some simple round trip conversions
