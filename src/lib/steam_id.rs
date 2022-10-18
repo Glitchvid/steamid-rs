@@ -202,7 +202,7 @@ impl FromStr for SteamIdBuilder {
         (s.len() < 32)
             .then(||
             // Only ever ASCII values in a SteamId so treat as bytes for speed.
-            match s.as_bytes().get(0).ok_or(ParseError::Empty)? {
+            match s.as_bytes().first().ok_or(ParseError::Empty)? {
                 b'0'..=b'9' => parse_from_steamid64(s),
                 b'S' => parse_from_steamid2(s),
                 b'[' => parse_from_steamid3(s),

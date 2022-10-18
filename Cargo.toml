@@ -2,6 +2,9 @@
 name = "steamid-rs"
 version = "0.2.4"
 edition = "2021"
+description = "Idiomatic Rust SteamID library that doesn't depend on Regex"
+license = "MIT"
+repository = "https://github.com/Glitchvid/steamid-rs"
 
 [lib]
 name = "steamid"
