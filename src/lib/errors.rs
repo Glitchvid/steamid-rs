@@ -75,3 +75,33 @@ impl Display for ParseError {
 }
 
 impl std::error::Error for ParseError {}
+
+/////////////////////////////////////////////////////////////////////////////
+// Unit Testing
+/////////////////////////////////////////////////////////////////////////////
+#[cfg(test)]
+mod tests {
+    use crate::*;
+
+    #[test]
+    fn error_fmt_reasons() {
+        use std::str::FromStr;
+        
+        // Create some SteamIds with errors and make sure they result in the
+        // error we expect.
+        SteamId::from_str("UnknownFormat")
+            .map_err(|e| format!("{e}"))
+            .unwrap_err();
+        SteamId::from_str("[Z:Z:Z]")
+            .map_err(|e| format!("{e}"))
+            .unwrap_err();
+        SteamId::from_str("STEAM_1:1")
+            .map_err(|e| format!("{e}"))
+            .unwrap_err();
+        SteamId::from_str("")
+            .map_err(|e| format!("{e}"))
+            .unwrap_err();
+        // Other is currently unused.
+        errors::ParseError::Other("unused").to_string();
+    }
+}
