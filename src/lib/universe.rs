@@ -62,9 +62,9 @@ impl From<u8> for Universe {
     }
 }
 
-impl From<&SteamId> for Universe {
+impl From<SteamId> for Universe {
     #[rustfmt::skip]
-    fn from(steamid: &SteamId) -> Self {
+    fn from(steamid: SteamId) -> Self {
         let universe_val = (steamid.id & mask::UNIVERSE) >> shift::UNIVERSE;
         // We can safely cast as u8 since Universe is 8-bits in packed repr.
         Universe::from(universe_val as u8)

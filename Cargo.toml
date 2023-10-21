@@ -1,8 +1,8 @@
 [package]
 name = "steamid-rs"
-version = "0.2.4"
+version = "0.3.0"
 edition = "2021"
-description = "Idiomatic Rust SteamID library that doesn't depend on Regex"
+description = "SteamID parsing and formatting library that doesn't depend on Regex in idiomatic Rust."
 license = "MIT"
 repository = "https://github.com/Glitchvid/steamid-rs"
 

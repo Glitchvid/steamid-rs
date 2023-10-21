@@ -13,9 +13,9 @@
 //! // We can now get the account number
 //! println!("Account Number: {}", user.account_number());
 //! // Or the profile URL
-//! println!("Profile URL: {}", IdFormat::Url(&user));
+//! println!("Profile URL: {}", IdFormat::Url(user));
 //! // Or the SteamId2 representation
-//! assert_eq!(IdFormat::SteamId2(&user).to_string(), "STEAM_1:1:15344052");
+//! assert_eq!(IdFormat::SteamId2(user).to_string(), "STEAM_1:1:15344052");
 //! ```
 //! * Parsing different SteamId representations.
 //! ```
@@ -42,7 +42,7 @@
 //!     .account_type('U')
 //!     .instance(4)
 //!     .finish();
-//! assert_eq!(u64::from(&player), 76561210875855721)
+//! assert_eq!(u64::from(player), 76561210875855721)
 //! ```
 //! * Modify an existing SteamId
 //! ```
@@ -50,8 +50,8 @@
 //!
 //! let base = SteamId::from(76561197990953833);
 //! // Turn the user into a clan account.
-//! let group = SteamIdBuilder::from(&base).account_type('g').finish();
-//! println!("{}", IdFormat::Url(&group));
+//! let group = SteamIdBuilder::from(base).account_type('g').finish();
+//! println!("{}", IdFormat::Url(group));
 //! ```
 //!
 

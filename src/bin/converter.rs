@@ -20,9 +20,9 @@ fn main() {
     for input in args.iter().skip(1) {
         match input.parse::<SteamId>() {
             Ok(v) => {
-                println!("steamID64:\t{}", IdFormat::SteamId64(&v));
-                println!("steamID:  \t{}", IdFormat::SteamId2(&v));
-                println!("steamID3: \t{}", IdFormat::SteamId3(&v));
+                println!("steamID64:\t{}", IdFormat::SteamId64(v));
+                println!("steamID:  \t{}", IdFormat::SteamId2(v));
+                println!("steamID3: \t{}", IdFormat::SteamId3(v));
             }
             Err(e) => {
                 println!("Unable to parse \"{}\" reason: '{}'", input, e);

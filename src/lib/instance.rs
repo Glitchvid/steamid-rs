@@ -54,8 +54,8 @@ impl From<u32> for Instance {
     }
 }
 
-impl From<&SteamId> for Instance {
-    fn from(steamid: &SteamId) -> Self {
+impl From<SteamId> for Instance {
+    fn from(steamid: SteamId) -> Self {
         let val = ((steamid.id & mask::INSTANCE) >> shift::INSTANCE) as u32;
         Instance::from(val)
     }

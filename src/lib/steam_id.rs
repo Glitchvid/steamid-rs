@@ -11,6 +11,7 @@ use crate::{mask, shift};
 use crate::{ChatType, Instance};
 
 /// Replaces the bits in `val` with those from `new`, leaving masked bits alone.
+#[inline(always)]
 fn replace_bits(val: u64, mask: u64, new: u64) -> u64 {
     (val & (!mask)) | (new & mask)
 }
@@ -25,7 +26,7 @@ fn replace_bits(val: u64, mask: u64, new: u64) -> u64 {
 ///
 /// let user = SteamIdBuilder::new().account_number(1).finish();
 ///
-/// let url = IdFormat::Url(&user).to_string();
+/// let url = IdFormat::Url(user).to_string();
 /// assert_eq!(url, "http://steamcommunity.com/profiles/76561197960265730" )
 /// ```
 ///
@@ -34,8 +35,8 @@ fn replace_bits(val: u64, mask: u64, new: u64) -> u64 {
 /// use steamid::{SteamId, SteamIdBuilder, IdFormat};
 ///
 /// let base = SteamId::from(76561197990953833);
-/// let multiverse = SteamIdBuilder::from(&base).universe(2).finish();
-/// assert_eq!(IdFormat::Url(&multiverse).to_string(), "http://steamcommunity.com/profiles/148618792028881769")
+/// let multiverse = SteamIdBuilder::from(base).universe(2).finish();
+/// assert_eq!(IdFormat::Url(multiverse).to_string(), "http://steamcommunity.com/profiles/148618792028881769")
 /// ```
 ///
 /// - Completely specify a SteamId.
@@ -48,10 +49,10 @@ fn replace_bits(val: u64, mask: u64, new: u64) -> u64 {
 ///     .account_type('U')
 ///     .instance(4)
 ///     .finish();
-/// assert_eq!(u64::from(&player), 76561210875855721)
+/// assert_eq!(u64::from(player), 76561210875855721)
 /// ```
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct SteamIdBuilder {
     pub(crate) id: u64,
 }
@@ -85,7 +86,7 @@ impl SteamIdBuilder {
     /// .authentication_server(1)
     /// .finish();
     ///
-    /// assert_eq!(IdFormat::SteamId3(&user).to_string(), "[U:1:30688105]");
+    /// assert_eq!(IdFormat::SteamId3(user).to_string(), "[U:1:30688105]");
     /// ```
     pub fn finish(self) -> SteamId {
         SteamId { id: self.id }
@@ -131,9 +132,9 @@ impl SteamIdBuilder {
     /// .account_type(AccountType::Clan)
     /// .finish();
     ///
-    /// assert_eq!(IdFormat::SteamId64(&group).to_string(), "103582791464489035");
-    /// assert_eq!(IdFormat::SteamId3(&group).to_string(), "[g:1:34967627]");
-    /// assert_eq!(IdFormat::SteamId2(&group).to_string(), "STEAM_1:1:17483813");
+    /// assert_eq!(IdFormat::SteamId64(group).to_string(), "103582791464489035");
+    /// assert_eq!(IdFormat::SteamId3(group).to_string(), "[g:1:34967627]");
+    /// assert_eq!(IdFormat::SteamId2(group).to_string(), "STEAM_1:1:17483813");
     /// ```
     pub fn account_type<T: Into<AccountType>>(self, val: T) -> Self {
         let atype: AccountType = val.into();
@@ -187,12 +188,6 @@ impl From<SteamId> for SteamIdBuilder {
     }
 }
 
-impl From<&SteamId> for SteamIdBuilder {
-    fn from(steamid: &SteamId) -> Self {
-        SteamIdBuilder { id: steamid.id }
-    }
-}
-
 impl FromStr for SteamIdBuilder {
     type Err = ParseError;
 
@@ -214,6 +209,7 @@ impl FromStr for SteamIdBuilder {
 
 // Ugly parsing code since we're not using Regex.
 
+#[inline]
 fn parse_from_steamid64(s: &str) -> Result<SteamIdBuilder, ParseError> {
     Ok(SteamIdBuilder {
         id: s
@@ -362,7 +358,7 @@ fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, ParseError> {
 /// use steamid::{SteamId, IdFormat};
 ///
 /// let player = SteamId::from(76561197990953833);
-/// assert_eq!(IdFormat::SteamId3(&player).to_string(), "[U:1:30688105]");
+/// assert_eq!(IdFormat::SteamId3(player).to_string(), "[U:1:30688105]");
 /// ```
 /// - Parsing from a string
 /// ```
@@ -370,16 +366,16 @@ fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, ParseError> {
 /// use steamid::{SteamId, IdFormat};
 ///
 /// let player = SteamId::from_str("76561197990953833").unwrap();
-/// assert_eq!(IdFormat::SteamId3(&player).to_string(), "[U:1:30688105]");
+/// assert_eq!(IdFormat::SteamId3(player).to_string(), "[U:1:30688105]");
 /// ```
 /// - Printing a SteamId
 /// ```
 /// use steamid::{SteamId, IdFormat};
 ///
 /// let steamid = SteamId::from(76561197990953833);
-/// println!("steamID64:\t{}", IdFormat::SteamId64(&steamid));
-/// println!("steamID:  \t{}", IdFormat::SteamId2(&steamid));
-/// println!("steamID3: \t{}", IdFormat::SteamId3(&steamid));
+/// println!("steamID64:\t{}", IdFormat::SteamId64(steamid));
+/// println!("steamID:  \t{}", IdFormat::SteamId2(steamid));
+/// println!("steamID3: \t{}", IdFormat::SteamId3(steamid));
 /// ```
 /// - Modifying a SteamId
 /// ```
@@ -387,9 +383,9 @@ fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, ParseError> {
 ///
 /// let original = SteamId::from(76561197990953833);
 /// let modified = SteamIdBuilder::from(original).account_type('g').finish();
-/// println!("steamID64:\t{}", IdFormat::SteamId64(&modified));
-/// println!("steamID:  \t{}", IdFormat::SteamId2(&modified));
-/// println!("steamID3: \t{}", IdFormat::SteamId3(&modified));
+/// println!("steamID64:\t{}", IdFormat::SteamId64(modified));
+/// println!("steamID:  \t{}", IdFormat::SteamId2(modified));
+/// println!("steamID3: \t{}", IdFormat::SteamId3(modified));
 /// ```
 /// - Building from a [SteamIdBuilder]
 /// ```
@@ -401,9 +397,9 @@ fn parse_from_steamid3(s: &str) -> Result<SteamIdBuilder, ParseError> {
 ///     .account_type('U')
 ///     .instance(4)
 ///     .finish();
-/// assert_eq!(u64::from(&player), 76561210875855721)
+/// assert_eq!(u64::from(player), 76561210875855721)
 /// ```
-#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct SteamId {
     pub(crate) id: u64,
 }
@@ -444,7 +440,7 @@ impl SteamId {
     /// let id = SteamId::from(103582791464489035);
     /// assert_eq!(id.account_type(), AccountType::Clan)
     /// ```
-    pub fn account_type(&self) -> AccountType {
+    pub fn account_type(self) -> AccountType {
         AccountType::from(self)
     }
 
@@ -458,7 +454,7 @@ impl SteamId {
     /// let id = SteamId::from(108156759836037195);
     /// assert_eq!(id.instance(), Instance::None(ChatType::ClanChat))
     /// ```
-    pub fn instance(&self) -> Instance {
+    pub fn instance(self) -> Instance {
         Instance::from(self)
     }
 
@@ -470,7 +466,7 @@ impl SteamId {
     /// let id: SteamId = "[U:1:30688105]".parse().unwrap();
     /// assert_eq!(id.universe(), Universe::Public)
     /// ```
-    pub fn universe(&self) -> Universe {
+    pub fn universe(self) -> Universe {
         Universe::from(self)
     }
 }
@@ -482,8 +478,8 @@ impl From<u64> for SteamId {
     }
 }
 
-impl From<&SteamId> for u64 {
-    fn from(steamid: &SteamId) -> Self {
+impl From<SteamId> for u64 {
+    fn from(steamid: SteamId) -> Self {
         steamid.id
     }
 }
@@ -509,21 +505,21 @@ impl FromStr for SteamId {
 ///     .account_type('U')
 ///     .finish();
 ///
-/// assert_eq!(format!("{}",  IdFormat::SteamId64(&user)), "76561197990953833");
-/// assert_eq!(format!("{}",  IdFormat::SteamId2(&user)), "STEAM_1:1:15344052");
-/// assert_eq!(format!("{}",  IdFormat::SteamId3(&user)), "[U:1:30688105]");
-/// assert_eq!(format!("{}",  IdFormat::Url(&SteamId::from(103582791464489035))), "http://steamcommunity.com/gid/[g:1:34967627]");
+/// assert_eq!(format!("{}",  IdFormat::SteamId64(user)), "76561197990953833");
+/// assert_eq!(format!("{}",  IdFormat::SteamId2(user)), "STEAM_1:1:15344052");
+/// assert_eq!(format!("{}",  IdFormat::SteamId3(user)), "[U:1:30688105]");
+/// assert_eq!(format!("{}",  IdFormat::Url(SteamId::from(103582791464489035))), "http://steamcommunity.com/gid/[g:1:34967627]");
 ///```
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum IdFormat<'a> {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IdFormat {
     /// The full 64-bit "steamID64"
     ///
     /// Example: `76561197960265731`
-    SteamId64(&'a SteamId),
+    SteamId64(SteamId),
     /// Older "steamID" format used commonly.
     ///
     /// Example: `STEAM_1:1:15344052`
-    SteamId2(&'a SteamId),
+    SteamId2(SteamId),
     /// This is different from normal `SteamId2` in that the universe is always
     /// shown as `0`.
     ///
@@ -531,21 +527,21 @@ pub enum IdFormat<'a> {
     /// For SteamId3 `[U:1:3]`
     /// - SteamId2  = `STEAM_1:1:1`
     /// - SteamId2Legacy = `STEAM_0:1:1`
-    SteamId2Legacy(&'a SteamId),
+    SteamId2Legacy(SteamId),
     /// Modern preferred standard.
     ///
     /// Example: `[U:1:30688105]`
-    SteamId3(&'a SteamId),
+    SteamId3(SteamId),
     /// Web address for the SteamId.
     ///
     /// ## Example ##
     /// `http://steamcommunity.com/profiles/76561197990953833`
     ///
     /// `http://steamcommunity.com/gid/[g:1:34967627]`
-    Url(&'a SteamId),
+    Url(SteamId),
 }
 
-impl Display for IdFormat<'_> {
+impl Display for IdFormat {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             IdFormat::SteamId64(v) => write!(f, "{}", v.id),
@@ -572,7 +568,7 @@ impl Display for IdFormat<'_> {
             ),
             IdFormat::Url(v) => {
                 let (prefix, postfix) = match v.account_type() {
-                    AccountType::Clan => (GROUP_URL, IdFormat::SteamId3(v).to_string()),
+                    AccountType::Clan => (GROUP_URL, IdFormat::SteamId3(*v).to_string()),
                     _ => (PROFILE_URL, v.id.to_string()),
                 };
                 write!(f, "{prefix}{postfix}")
@@ -777,7 +773,7 @@ mod tests {
     fn from_reciprocity() {
         let alfred = SteamId::from(4503603922337794);
         assert_eq!(SteamIdBuilder::from(alfred.clone()).id, 4503603922337794);
-        assert_eq!(SteamIdBuilder::from(&alfred).id, 4503603922337794);
+        assert_eq!(SteamIdBuilder::from(alfred).id, 4503603922337794);
     }
 
     #[test]

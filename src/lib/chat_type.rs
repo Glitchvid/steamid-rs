@@ -45,8 +45,8 @@ impl From<u8> for ChatType {
         }
     }
 }
-impl From<&SteamId> for ChatType {
-    fn from(steamid: &SteamId) -> Self {
+impl From<SteamId> for ChatType {
+    fn from(steamid: SteamId) -> Self {
         // CHAT_TYPE is an 8-bit mask, so we're safe to cast into a u8 here.
         ChatType::from(((steamid.id & mask::CHAT_TYPE) >> shift::CHAT_TYPE) as u8)
     }
@@ -70,19 +70,19 @@ mod tests {
     #[test]
     fn steamid_conversion() {
         assert_eq!(
-            ChatType::from(&SteamIdBuilder::new().account_type('L').finish()),
+            ChatType::from(SteamIdBuilder::new().account_type('L').finish()),
             ChatType::Lobby
         );
         assert_eq!(
-            ChatType::from(&SteamIdBuilder::new().account_type('T').finish()),
+            ChatType::from(SteamIdBuilder::new().account_type('T').finish()),
             ChatType::MatchMakingLobby
         );
         assert_eq!(
-            ChatType::from(&SteamIdBuilder::new().account_type('c').finish()),
+            ChatType::from(SteamIdBuilder::new().account_type('c').finish()),
             ChatType::ClanChat
         );
         assert_eq!(
-            ChatType::from(&SteamIdBuilder::new().account_type('I').finish()),
+            ChatType::from(SteamIdBuilder::new().account_type('I').finish()),
             ChatType::None
         );
     }

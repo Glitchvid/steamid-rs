@@ -121,9 +121,9 @@ impl From<char> for AccountType {
     }
 }
 
-impl From<&SteamId> for AccountType {
+impl From<SteamId> for AccountType {
     #[rustfmt::skip]
-    fn from(steamid: &SteamId) -> Self {
+    fn from(steamid: SteamId) -> Self {
         use AccountType::*;
 
         let account_type = (steamid.id & mask::ACCOUNT_TYPE) >> shift::ACCOUNT_TYPE ;
@@ -168,15 +168,15 @@ mod tests {
             .account_number(1)
             .authentication_server(1);
         assert_eq!(
-            AccountType::from(&bld.clone().account_type('L').finish()),
+            AccountType::from(bld.clone().account_type('L').finish()),
             AccountType::Chat(ChatType::Lobby)
         );
         assert_eq!(
-            AccountType::from(&bld.clone().account_type('T').finish()),
+            AccountType::from(bld.clone().account_type('T').finish()),
             AccountType::Chat(ChatType::MatchMakingLobby)
         );
         assert_eq!(
-            AccountType::from(&bld.clone().account_type('c').finish()),
+            AccountType::from(bld.clone().account_type('c').finish()),
             AccountType::Chat(ChatType::ClanChat)
         );
     }
